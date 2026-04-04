@@ -24,3 +24,4 @@ Cloth is a high performance, Object-Oriented, low level language built for speed
 - *Maintainable* - Due to verbose syntax, Cloth can be maintained for years with little to no refactoring.*
 - *Productive* - Spend less time debugging and more time making with a compiler made for programmers, by programmers.
 
+* Due to the ongoing nature of development pre-1.0, Cloth code is likely to change, causing breaking issues. Look at the style book for more information regarding changes. 
