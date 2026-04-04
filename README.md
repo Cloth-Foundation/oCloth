@@ -6,11 +6,11 @@
              width="50%">
     </picture>
 
-[Website][Cloth] | [Getting Started] | [Learn] | [Documentation] | [Contributing]
+[Website][Cloth] | [Getting Started][GettingStarted] | [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
-[Getting Started]: htttps://cloth.dev/getting-started
+[GettingStarted]: htttps://cloth.dev/getting-started
 [Learn]: https://cloth.dev/learning-center
 [Documentation]: https://docs.cloth.dev
 [Contributing]: CONTRIBUTING.md
@@ -18,10 +18,12 @@
 This is the main source code repository for [Cloth](https://cloth.dev), including the compiler, standard library, documentation, and tooling. Shuttle can be found [here.](https://github.com/Cloth-Foundation/Shuttle)
 
 # What is Cloth?
-Cloth is a high performance, Object-Oriented, low level language built for speed while still maintaining a familiarity of C and Java.
 
-- *Performance* - Cloth is fast while maintaining reliability, great for critical infrastructure, backend systems, and integrated devices.
-- *Maintainable* - Due to verbose syntax, Cloth can be maintained for years with little to no refactoring.
-- *Productive* - Spend less time debugging and more time making with a compiler made for programmers, by programmers.
+Cloth is a high-performance, object-oriented, low-level language designed for predictable execution and maintainable systems programming. It combines familiar C-style control with a structured, Java-like class model.
+
+- *Performance* – Cloth avoids garbage collection and uses deterministic destruction, resulting in predictable runtime behavior and minimal overhead.
+- *Maintainability* – A structured, class-oriented design and explicit syntax make large codebases easier to reason about and evolve over time.
+- *Productivity* – Strong compile-time guarantees and explicit error handling reduce runtime surprises and debugging complexity.
+- *Memory Safety* – Cloth uses a hierarchical ownership model with deterministic destruction. Objects form an ownership tree rooted at program entry, while static data exists in a separate root-lifetime domain, allowing for safe and predictable memory management without a garbage collector.
 
 > Due to the ongoing nature of development pre-1.0, Cloth code is likely to change, causing breaking issues. Look at the style book for more information regarding changes. 
