@@ -1,0 +1,6 @@
+; src/llvm-backend/dune
+(foreign_library
+ (archive_name cloth_llvm_backend)
+ (language cxx)
+ (names driver)
+ (flags :standard -std=c++20 -fPIC))

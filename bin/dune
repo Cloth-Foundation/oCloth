@@ -1,0 +1,5 @@
+(executable
+ (name cloth_cli)
+ (public_name cloth)
+ (modules cloth_cli)
+ (libraries cloth_frontend))

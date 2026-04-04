@@ -1,0 +1,24 @@
+opam-version: "2.0"
+synopsis: "A low level, non-GC, OOL, Java-like language for writing high performance code"
+version: "0.0.1"
+maintainer: "iso2t@protonmail.com"
+authors: ["Wylan Shoemaker"]
+homepage: "https://cloth.dev"
+license: "See https://cloth.dev/license"
+bug-reports: "https://issues.cloth.dev"
+dev-repo: "https://github.com/Cloth-Foundation/oCloth"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+    "dune" {>= "3.0.0"}
+    "qcheck" {= "0.91"}
+    "qcheck-alcotest" {= "0.91"}
+    "alcotest" {= "1.9.1"}
+    "odoc" {= "3.1.0"}
+    "ocamlformat" {="0.29.0"}
+    "bisect_ppx" { = "2.8.3"}
+    "menhir"{= "20260209"}
+    "fmt" { ="0.11.0"}
+    "ppx_deriving_protobuf" {= "3.0.0"}
+]

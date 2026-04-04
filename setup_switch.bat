@@ -1,0 +1,1 @@
+opam env --switch . --set-switch --shell=power | Invoke-Expression

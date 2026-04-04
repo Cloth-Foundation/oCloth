@@ -1,0 +1,11 @@
+module example;
+
+import cloth.out::{println};
+
+public class Main(String[] args) {
+
+    public Main {
+        println("Hello, World!");
+    }
+
+}

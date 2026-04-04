@@ -1,0 +1,74 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+!dune
+!Dockerfile
+
+.vscode
+.DS_Store
+
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+*.install 
+
+# ocamlbuild working directory
+_build/
+
+# ocaml opam
+_opam/
+
+# ocamlbuild targets
+*.byte
+*.native
+
+# oasis generated files
+setup.data
+setup.log
+
+# Merlin configuring file for Vim and Emacs
+.merlin
+
+# Coveralls.io configuration file
+.coveralls.yml
+
+#coverage build files
+_coverage
+*.coverage
+
+# Ignore (corrected) output for tests
+*.out
+*.ll
+*.ir
+*.out.corrected
+
+# Ignore other opam files
+ast.opam
+parsing.opam
+typing.opam
+data_race_checker.opam
+desugaring.opam
+ir_gen.opam
+
+#ignore generated proto files
+*.pb.*
+
+# Ignore all bazel-* generated files
+/bazel-*
+
+# ignore Java output
+*.class
+
+# VSCode
+.vscode/
