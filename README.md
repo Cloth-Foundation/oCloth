@@ -26,4 +26,17 @@ Cloth is a high-performance, object-oriented, low-level language designed for pr
 - *Productivity* – Strong compile-time guarantees and explicit error handling reduce runtime surprises and debugging complexity.
 - *Memory Safety* – Cloth uses a hierarchical ownership model with deterministic destruction. Objects form an ownership tree rooted at program entry, while static data exists in a separate root-lifetime domain, allowing for safe and predictable memory management without a garbage collector.
 
-> Due to the ongoing nature of development pre-1.0, Cloth code is likely to change, causing breaking issues. Look at the style book for more information regarding changes. 
+## Quick Start Guide
+Download the latest compiler installer for your operating system and follow the on-screen instructions. You may need administrator permissions.
+
+## Build From Source
+While not recommended, you can follow [the Installation Guide][INSTALL.md].
+
+## Help
+See the [Help Center][https://cloth.dev/resources] or the [Documentation][https://docs.cloth.dev/] for help resources.
+
+## Contributing
+See [Contributing.md](Contributing.md).
+
+## License
+Cloth is distributed under the terms of the MIT license and Apache 2.0 license. 
