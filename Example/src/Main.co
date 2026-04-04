@@ -2,6 +2,7 @@ module example;
 
 import cloth.out::{println};
 
+// Test comment
 public class Main(String[] args) {
 
     public Main {

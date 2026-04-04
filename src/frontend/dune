@@ -1,6 +1,7 @@
 ; src/frontend/dune
+
 (library
  (name cloth_frontend)
  (public_name cloth.frontend)
- (modules cloth_frontend backend_bindings token)
+ (modules cloth_frontend backend_bindings token lexer)
  (foreign_archives ../llvm-backend/cloth_llvm_backend))
