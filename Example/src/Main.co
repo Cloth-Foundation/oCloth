@@ -9,4 +9,8 @@ public class Main(String[] args) {
         println("Hello, World!");
     }
 
+    public func s$run() :> void maybe NaN {
+        println("Running...");
+    }
+
 }

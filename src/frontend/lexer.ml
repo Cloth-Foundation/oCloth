@@ -51,7 +51,11 @@ let is_identifier_start = function
   | 'a' .. 'z' | 'A' .. 'Z' | '_' -> true
   | _ -> false
 
-let is_identifier_part ch = is_identifier_start ch || is_digit ch
+let is_identifier_middle = function
+  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' -> true
+  | _ -> false
+
+let is_identifier_part ch = is_identifier_start ch || is_digit ch || is_identifier_middle ch
 
 let take_while state predicate =
   let start = state.index in
