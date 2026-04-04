@@ -6,7 +6,7 @@
              width="50%">
     </picture>
 
-[Website][Cloth] | [Getting started] | [Learn] | [Documentation] | [Contributing]
+[Website][Cloth] | [Getting Started] | [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
@@ -21,7 +21,7 @@ This is the main source code repository for [Cloth](https://cloth.dev), includin
 Cloth is a high performance, Object-Oriented, low level language built for speed while still maintaining a familiarity of C and Java.
 
 - *Performance* - Cloth is fast while maintaining reliability, great for critical infrastructure, backend systems, and integrated devices.
-- *Maintainable* - Due to verbose syntax, Cloth can be maintained for years with little to no refactoring.*
+- *Maintainable* - Due to verbose syntax, Cloth can be maintained for years with little to no refactoring.
 - *Productive* - Spend less time debugging and more time making with a compiler made for programmers, by programmers.
 
-* Due to the ongoing nature of development pre-1.0, Cloth code is likely to change, causing breaking issues. Look at the style book for more information regarding changes. 
+> Due to the ongoing nature of development pre-1.0, Cloth code is likely to change, causing breaking issues. Look at the style book for more information regarding changes. 
