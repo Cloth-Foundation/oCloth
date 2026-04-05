@@ -7,8 +7,6 @@
 
 ## Table of Contents
 
-## Table of Contents
-
 1. Introduction
    1. Goals and Non-Goals
    2. Conformance Language (MUST/SHOULD/MAY)
@@ -22,14 +20,14 @@
    6. Keywords
    7. Operators and Punctuation
    8. Literals
-      - Integer Literals
-      - Floating-Point Literals
-      - Byte Literals
-      - Bit Literals
-      - Character Literals
-      - String Literals
-      - Boolean, Null, and Special Literals
-      - Future Literal Forms
+      1. Integer Literals
+      2. Floating-Point Literals
+      3. Byte Literals
+      4. Bit Literals
+      5. Character Literals
+      6. String Literals
+      7. Boolean, Null, and Special Literals
+      8. Future Literal Forms
 3. Program Structure
    1. Parsing Model and Expectations
    2. Compilation Model (Two-Pass Overview)
