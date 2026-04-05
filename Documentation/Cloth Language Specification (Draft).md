@@ -506,12 +506,11 @@ Imports establish which external symbols are visible inside the current module. 
 
 #### 3.4.2 Cyclic Dependencies
 
-- Cloth permits modules to reference declarations from one another, including in patterns that form cycles, provided those declarations can be resolved through the language’s compilation model.
-- Import directives participate in compile-time name lookup only. They do not imply runtime loading order, construction order, or ownership relationships.
-- Implementations **MUST** collect and merge top-level declarations before resolving bodies, so that mutually dependent modules can be analyzed consistently.
-- A module import cycle is not inherently invalid. It becomes invalid only when it prevents unambiguous resolution of declarations, initialization ordering, or other compile-time requirements defined elsewhere in this specification.
-- Implementations **MUST** reject cyclic module dependencies when they require a compile-time action that cannot be linearized deterministically.
-- Implementations **SHOULD** emit a diagnostic that identifies the cycle path when such a dependency is rejected.
+- Cloth permits cyclic type dependencies. Modules `A` and `B` may declare types that refer to each other so long as the declarations can be resolved during the structural pass.
+- Owned object relationships **MUST** remain acyclic unless every participant resides in a shared lifetime region. Attempting to introduce an ownership cycle outside of a shared region is a compile-time error enforced by the ownership analysis.
+- Import directives participate in compile-time name lookup only. They do not imply runtime loading order or ownership relationships.
+- Implementations **MUST** collect and merge top-level declarations before resolving bodies so that mutually dependent modules can be analyzed consistently.
+- A module import cycle is invalid only when it prevents unambiguous resolution of declarations, initialization ordering, or other compile-time requirements. When a cycle must be rejected, the compiler **SHOULD** emit a diagnostic that identifies the path.
 
 ### 3.5 Top-Level Declarations
 
@@ -529,3 +528,131 @@ Imports establish which external symbols are visible inside the current module. 
   4. Top-level type declarations grouped by responsibility.
 - Declaring multiple modules per file, placing imports after declarations, or mixing statements with the module declaration is forbidden and **MUST** be diagnosed.
 - Generated files **MUST** adhere to the same structure so that they can be compiled alongside handwritten sources without special flags.
+
+## 4. Type System
+
+Cloth is statically typed and nominal. Every expression has a compile-time type, and programmers must declare the types of all storage locations unless a specific inference rule applies. This section enumerates the canonical type categories and the rules that govern conversions between them.
+
+### 4.1 Overview of the Type System
+
+- Types are grouped into primitives, composites, nullable forms, and user-defined declarations (classes, structs, interfaces, traits, enums). User-defined types are nominal: equality depends on the fully qualified name, not structure.
+- `any` is the universal reference type. Any reference type may implicitly upcast to `any`, but the reverse requires a cast.
+- `void` denotes the absence of a value and may appear only as the return type of functions or as the type of `Main` constructors. Variables cannot have type `void`.
+- Nullability is explicit. Non-nullable types **MUST NOT** receive `null`, and the compiler enforces checks before dereferencing nullable values.
+
+### 4.2 Primitive Types
+
+Primitive types have fixed binary representations. They are always available without imports and participate directly in arithmetic and logical operations.
+
+#### 4.2.1 Integer Types
+
+- Signed integers: `i8`, `i16`, `i32`, `i64`.
+- Unsigned integers: `u8`, `u16`, `u32`, `u64`.
+- Synonyms:
+  - `byte` = `u8`
+  - `short` = `i16`
+  - `int` = `i32`
+  - `long` = `i64`
+  - `uint` = `u32`
+  - `bit` = single-bit numeric type (logical `0` or `1`)
+- All integers use two's-complement encoding. Arithmetic that leaves the destination range is **undefined behavior** until checked-arithmetic intrinsics are standardized (**OPEN ISSUE: Checked arithmetic**).
+- Implicit conversions are limited to widening conversions (e.g., `i16` → `i32`). All other conversions require an explicit cast (§4.8.1).
+
+#### 4.2.2 Floating-Point Types
+
+- `f32` (alias `float`) follows IEEE-754 single-precision semantics.
+- `f64` (aliases `double`, `real`) follows IEEE-754 double-precision semantics.
+- Literal suffixes `f/F/d/D` select the canonical float type (§2.8.2). Without a suffix, literals default to `double`.
+- Only `f32` → `f64` is implicitly allowed. Downcasts require explicit casts, which may round or overflow per IEEE rules.
+
+#### 4.2.3 Boolean Type
+
+- `bool` stores the logical values `true` and `false`. It is distinct from `bit`; automatic conversion between them is prohibited.
+- Conditionals (`if`, `while`, `switch`) require `bool`. Using any other type without an explicit conversion is a compile-time error.
+
+#### 4.2.4 String Type
+
+- `String` represents an immutable UTF-8 sequence. Length is measured in bytes; APIs expose code-point iteration for locale-aware operations.
+- String literals produce `String` instances whose storage is owned by the declaring module unless explicitly copied.
+- The standard library defines concatenation, slicing, and interning semantics; the core language guarantees only immutability and UTF-8 encoding.
+
+### 4.3 Composite Types
+
+Composite types are derived from other types but remain first-class citizens.
+
+#### 4.3.1 Arrays
+
+- Syntax: `T[]`.
+- Arrays are reference types that own their elements. Destroying the array destroys contained elements following the ownership tree rules.
+- Length is fixed at construction. Access is bounds-checked unless the implementation provides a documented `unsafe` escape hatch.
+
+#### 4.3.2 Tuples
+
+- Syntax: `(T0, T1, ..., Tn)` for `n ≥ 1`.
+- Tuples are value types. Equality and hashing are structural and consider each component in order.
+- Tuple elements are accessed via positional selectors (`value.0`) or pattern destructuring.
+
+### 4.4 Nullable Types
+
+- `T?` denotes an optional value of type `T`. The value set is `{ null } ∪ { v | v ∈ T }`.
+- Nullable references default to `null`; nullable value types default to the zero-initialized value of `T`.
+- Converting `T?` to `T` requires an explicit null check (`??`, `if`, pattern matching). Assigning `null` to a non-nullable `T` is a compile-time error.
+
+### 4.5 Type Modifiers
+
+Modifiers refine how a type behaves regarding concurrency, storage, or ownership.
+
+#### 4.5.1 `atomic`
+
+- `atomic T` guarantees that reads and writes of `T` occur atomically with respect to other threads.
+- Only types whose sizes fit the platform's native atomic widths may be marked `atomic`. Otherwise, the compiler **MUST** emit an error.
+- Atomics use sequentially consistent ordering until weaker modes are standardized (**OPEN ISSUE: Memory ordering modifiers**).
+
+#### 4.5.2 Other Modifiers
+
+- `shared` marks instances that exist in the shared lifetime domain (§Ownership Model). Shared instances cannot own non-shared children.
+- `owned` documents that a member participates in the owner's destruction order (the default for most instance fields).
+- `const` prohibits mutation after initialization. The compiler **MUST** enforce this for both value and reference members.
+- Additional modifiers such as `static` and future concurrency tags **MUST** be specified before use. Implementations **MUST NOT** invent modifiers without specification backing.
+
+### 4.6 Type Identity and Equality
+
+- Primitive types are identical if they share the same canonical name (aliases map to their canonical forms).
+- User-defined types are identified by their fully qualified module path and name.
+- Array types are identical when their element types are identical. Tuple types require identical arity and component types in order.
+- Nullable types form distinct identities: `T? ≠ T` even when `T` admits `null`.
+- Type aliases do not create new identities; they simply introduce alternate spellings.
+
+### 4.7 Type Inference Rules
+
+- `var` enables local inference: `var x = expr;` infers `x`'s type from `expr`. The initializer is mandatory.
+- Generic inference selects type arguments that satisfy all constraints at the call site. When inference fails, the program is ill-typed and the compiler **MUST** request explicit type arguments.
+- Inference is never bidirectional; usage sites do not retroactively affect declaration types.
+- Public APIs **SHOULD** spell out explicit types to maintain stability across compilation units.
+
+### 4.8 Casting and Conversion
+
+Conversions move values between types. Unless stated otherwise, conversions occur at compile time; runtime checks are injected only when required for safety.
+
+#### 4.8.1 Explicit Casting (`as`)
+
+- Syntax: `expr as TargetType`.
+- Used for narrowing numeric conversions, reference downcasts, and interface/class rebindings.
+- If the conversion cannot be proven safe at compile time, a runtime check occurs. Failing the check throws a `CastError` (**OPEN ISSUE: precise exception name**).
+
+#### 4.8.2 Safe Casting (`as?`)
+
+- Syntax: `expr as? TargetType`.
+- Evaluation yields `TargetType?`. If `expr` is compatible with `TargetType`, the result is the converted value (non-null). Otherwise the result is `null`; the cast never throws.
+- Safe casts are typically paired with `??` to supply fallback behavior. Example:<br>
+  `const u32 value = (input as? u32) ?? throw new NegativeNumberError("Negative number");`
+- Implementations **MAY** desugar `as?` into `is` checks followed by conditional `as` operations, but the observable semantics **MUST** match the nullable result contract.
+- Because the result is nullable, subsequent use **MUST** discharge the `null` case via `??`, pattern matching, or explicit guards before treating it as non-nullable `TargetType`.
+
+#### 4.8.3 Implicit Conversions
+
+- Allowed cases:
+  - Numeric widening (`i8` → `i16`, `f32` → `f64`).
+  - Reference upcasting along inheritance or interface implementation edges.
+  - Adding nullability (`T` → `T?`).
+- Any other conversion (including nullable-to-non-nullable, signed-to-unsigned, or custom user-defined conversions) **MUST** be explicit.
