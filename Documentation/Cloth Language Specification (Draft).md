@@ -132,33 +132,33 @@
    10. Meta Accessors (Objects and Primitives)
    11. Examples
 10. Functions and Methods
-   1. Function Signature
-   2. Return Types
-   3. Maybe Clauses
-   4. Parameter Passing
-   5. Function Overloading
-   6. Method Binding and Dispatch
+    1. Function Signature
+    2. Return Types
+    3. Maybe Clauses
+    4. Parameter Passing
+    5. Function Overloading
+    6. Method Binding and Dispatch
 11. Ownership and Memory Management
-   1. Ownership Model Overview
-   2. Object Ownership Rules
-   3. Transfer of Ownership
-   4. Static Lifetime Domain
-   5. Deterministic Destruction
-   6. Allocation Model
-   7. Lifetime Rules
-   8. Cycles and Limitations
-   9. Interaction with static
+    1. Ownership Model Overview
+    2. Object Ownership Rules
+    3. Transfer of Ownership
+    4. Static Lifetime Domain
+    5. Deterministic Destruction
+    6. Allocation Model
+    7. Lifetime Rules
+    8. Cycles and Limitations
+    9. Interaction with static
 12. Program Execution Model
-   1. Entrypoint Resolution
-   2. Main Class
-   3. Main Constructor
-   4. Initialization Flow
+    1. Entrypoint Resolution
+    2. Main Class
+    3. Main Constructor
+    4. Initialization Flow
 13. Build System
-   1. build.toml Overview
-   2. Project Configuration
-   3. Module Resolution
-   4. Dependency Management
-   5. Compilation Units
+    1. build.toml Overview
+    2. Project Configuration
+    3. Module Resolution
+    4. Dependency Management
+    5. Compilation Units
 
 ## 1. Introduction
 
