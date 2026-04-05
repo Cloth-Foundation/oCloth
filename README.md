@@ -6,10 +6,11 @@
              width="50%">
     </picture>
 
-[Website][Cloth] | [Getting Started](htttps://cloth.dev/getting-started) | [Learn] | [Documentation] | [Contributing]
+[Website][Cloth] | [Getting started]| [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
+[Getting Started]: htttps://cloth.dev/getting-started
 [Learn]: https://cloth.dev/learning-center
 [Documentation]: https://docs.cloth.dev
 [Contributing]: CONTRIBUTING.md
