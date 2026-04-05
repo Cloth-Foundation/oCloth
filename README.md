@@ -6,7 +6,7 @@
              width="50%">
     </picture>
 
-[Website][Cloth] | [Getting started]| [Learn] | [Documentation] | [Contributing]
+[Website][Cloth] | [Getting started] | [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
