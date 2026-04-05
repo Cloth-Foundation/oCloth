@@ -5,12 +5,11 @@
              src="https://github.com/Cloth-Foundation/.github/blob/main/Logos/PNG/Header%20-%20NO%20BG.png?raw=true"
              width="50%">
     </picture>
-
-[Website][Cloth] | [Getting started] | [Learn] | [Documentation] | [Contributing]
+ 
+[Website][Cloth] | [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
-[Getting Started]: htttps://cloth.dev/getting-started
 [Learn]: https://cloth.dev/learning-center
 [Documentation]: https://docs.cloth.dev
 [Contributing]: CONTRIBUTING.md
