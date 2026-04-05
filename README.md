@@ -6,11 +6,10 @@
              width="50%">
     </picture>
 
-[Website][Cloth] | [Getting Started][GettingStarted] | [Learn] | [Documentation] | [Contributing]
+[Website][Cloth] | [Getting Started](htttps://cloth.dev/getting-started) | [Learn] | [Documentation] | [Contributing]
 </div>
 
 [Cloth]: https://cloth.dev
-[GettingStarted]: htttps://cloth.dev/getting-started
 [Learn]: https://cloth.dev/learning-center
 [Documentation]: https://docs.cloth.dev
 [Contributing]: CONTRIBUTING.md
@@ -33,7 +32,7 @@ Download the latest compiler installer for your operating system and follow the 
 While not recommended, you can follow [the Installation Guide][INSTALL.md].
 
 ## Help
-See the [Help Center][https://cloth.dev/resources] or the [Documentation][https://docs.cloth.dev/] for help resources.
+See the [Help Center](https://cloth.dev/resources) or the [Documentation](https://docs.cloth.dev/) for help resources.
 
 ## Contributing
 See [Contributing.md](Contributing.md).

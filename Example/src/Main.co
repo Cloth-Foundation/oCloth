@@ -5,6 +5,9 @@ import cloth.out::{println};
 // Test comment
 public class Main(String[] args) {
 
+    private const int? MAX_VALUE = 100;
+    private bit flag = 0;
+
     public Main {
         println("Hello, World!");
     }

@@ -21,9 +21,7 @@ let compile_file path =
   match read_source_file path with
   | Error msg -> Error msg
   | Ok source -> (
-      Format.printf "Loaded %d bytes from %s@." (String.length source) path;
       match lex_source source with
-      | Ok tokens ->
-          Format.printf "Lexed %d tokens from %s@." (List.length tokens) path;
+      | Ok _ ->
           Ok ()
       | Error msg -> Error (Printf.sprintf "lex error in %s: %s" path msg) )

@@ -8,7 +8,7 @@ All objects exist within an **ownership tree**, rooted at program startup.
 * Each object owns its **declared and created children**
 * Ownership forms a **tree structure (parent → child)**
 * Destruction is **deterministic and cascading**
-* `static` members are **root-owned**, not instance-owned
+* `static` members exist in a **separate root-lifetime domain** outside the ownership tree
 
 This model removes the need for a traditional garbage collector while still providing structured and predictable memory management.
 
@@ -54,7 +54,6 @@ public class Main(String[] args) {
 * `Main` acts as the **root of the ownership tree**
 * All program objects exist directly or indirectly under `Main`
 * Program lifetime is defined by the lifetime of `Main`
-* Accessibility still lies within calling the declaring class, regardless of construction state.
 
 ---
 
@@ -77,13 +76,12 @@ public class Main(String[] args) {
 
 ---
 
-### Static Ownership (Exception Rule)
+### Static Lifetime Domain (Exception Rule)
 
-`static` members do not follow normal instance ownership.
+Static members in Cloth are globally accessible and exist for the entire duration of the program.
+They **do not participate in the ownership tree** and are **not owned by any object**.
 
-* `static` values belong to the **root program lifetime**
-* They are not owned by any instance
-* They persist until program termination
+Instead, they exist in a **root-lifetime domain** that runs alongside the ownership hierarchy.
 
 ```cloth
 public class Example {
@@ -96,7 +94,27 @@ public class Example {
 Conceptually:
 
 * Instance data → owned by object
-* Static data → owned by root lifetime
+* Static data → exists for the entire program lifetime
+
+---
+
+## Lifetime Domains
+
+Cloth separates memory into two distinct lifetime domains:
+
+### 1. Ownership Domain (Dynamic)
+
+* Rooted at `Main`
+* Contains all instance objects
+* Objects are created and destroyed
+* Destruction is cascading and deterministic
+
+### 2. Static Domain (Root Lifetime)
+
+* Exists for the duration of the program
+* Not part of the ownership tree
+* Not owned or transferred
+* Effectively always alive
 
 ---
 
@@ -104,7 +122,7 @@ Conceptually:
 
 ### Deterministic Destruction
 
-Cloth uses **deterministic destruction**, similar to C++.
+Cloth uses **deterministic destruction**.
 
 When an object is destroyed:
 
@@ -146,7 +164,7 @@ public class Main(String[] args) {
         println("Goodbye, World!");
     }
 
-    public func s$run() :> void maybe NaN {
+    public func run() :> void maybe NaN {
         println("Running...");
     }
 
@@ -202,7 +220,7 @@ Renderer destroyed
 Engine shutting down
 ```
 
-* Children are destroyed **before** the parent finishes destruction
+* Children are destroyed **before** the parent completes destruction
 * This ensures safe cleanup
 
 ---
@@ -288,28 +306,16 @@ The ownership tree provides:
 
 ---
 
-### Why Static is Root-Owned
+### Why Static is Not Owned
 
 Static values:
 
 * Exist independently of instances
-* Must persist across object lifetimes
-* Are tied to the program itself
+* Persist for the entire program lifetime
+* Do not participate in ownership relationships
 
-Treating them as root-owned:
+Separating static from ownership:
 
-* Keeps the ownership model consistent
-* Avoids ambiguity
-* Simplifies lifetime rules
-
----
-
-## Future Considerations
-
-The following areas are still under exploration:
-
-* Ownership transfer semantics
-* Borrowing/reference systems
-* Cycle prevention or detection
-* Interaction between `static` and ownership boundaries
-* Multi-root or subsystem lifetimes
+* Prevents confusion about lifetime
+* Avoids invalid ownership assumptions
+* Keeps the model simple and consistent

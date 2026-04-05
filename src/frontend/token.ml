@@ -56,7 +56,6 @@ module Token = struct
     | Keyword_If
     | Keyword_Import
     | Keyword_In
-    | Keyword_Int
     | Keyword_Interface
     | Keyword_Internal
     | Keyword_Is
@@ -87,8 +86,6 @@ module Token = struct
     | Keyword_U32
     | Keyword_U64
     | Keyword_U8
-    | Keyword_Uint
-    | Keyword_Unsigned
     | Keyword_Var
     | Keyword_Void
     | Keyword_While
@@ -199,7 +196,6 @@ module Token = struct
     | Keyword_If -> "Keyword_If"
     | Keyword_Import -> "Keyword_Import"
     | Keyword_In -> "Keyword_In"
-    | Keyword_Int -> "Keyword_Int"
     | Keyword_Interface -> "Keyword_Interface"
     | Keyword_Internal -> "Keyword_Internal"
     | Keyword_Is -> "Keyword_Is"
@@ -230,8 +226,6 @@ module Token = struct
     | Keyword_U32 -> "Keyword_U32"
     | Keyword_U64 -> "Keyword_U64"
     | Keyword_U8 -> "Keyword_U8"
-    | Keyword_Uint -> "Keyword_Uint"
-    | Keyword_Unsigned -> "Keyword_Unsigned"
     | Keyword_Var -> "Keyword_Var"
     | Keyword_Void -> "Keyword_Void"
     | Keyword_While -> "Keyword_While"

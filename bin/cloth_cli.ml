@@ -306,7 +306,7 @@ let execute_mode mode target =
       | Ok () -> (
           match mode with
           | Build ->
-              Printf.printf "Build succeeded for %s\n" (resolved_summary resolved)
+              Printf.printf "Build succeeded with exit code 0\n"
           | Compile ->
               Printf.printf "Compile succeeded for %s\n" (resolved_summary resolved)
           | Check ->
