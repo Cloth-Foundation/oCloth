@@ -500,7 +500,6 @@ Cloth avoids GC in its ownership domain to provide:
 Making unprefixed object types owned by default provides:
 
 * Cleaner syntax
-* A natural Java-like declaration style
 * Explicit lifetime semantics through a simple language rule
 * Less noise than requiring an ownership marker on every declaration
 

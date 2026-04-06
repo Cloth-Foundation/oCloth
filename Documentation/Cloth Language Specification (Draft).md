@@ -656,3 +656,302 @@ Conversions move values between types. Unless stated otherwise, conversions occu
   - Reference upcasting along inheritance or interface implementation edges.
   - Adding nullability (`T` → `T?`).
 - Any other conversion (including nullable-to-non-nullable, signed-to-unsigned, or custom user-defined conversions) **MUST** be explicit.
+
+## 5. Declarations
+
+Declarations introduce names, tie them to types, and establish how values participate in Cloth’s ownership and lifetime model. This section builds on §3 (structure) and §4 (type system) by specifying the rules every declaration obeys regardless of its location.
+
+### 5.1 General Declaration Rules
+
+- **Explicit typing** — Every declaration **MUST** state its type (or use `var` where local inference is permitted). The compiler never infers visibility, ownership domain, or modifiers from usage.
+- **Storage domains** — Declarations belong to one of three domains:
+  1. **Static** — Prefixed with `static`; lifetime equals the entire program and bypasses the ownership tree.
+  2. **Instance** — Fields and members owned by an object; they participate in the ownership hierarchy described in the Ownership & Lifetime Model.
+  3. **Local scope** — Variables declared within a block; lifetime equals the lexical scope.
+- **Relationship markers** — `Type`, `&Type`, and `$Type` express owned, non-owning, and shared relationships respectively. Unless a marker appears, the declaration is owned by default.
+- **Visibility defaults** — Top-level declarations default to `internal`; members default to `private`. Programmers **SHOULD** spell modifiers explicitly for public APIs.
+- **Definite assignment** — A declaration is not available for use until it has been definitively assigned along all control paths. Constructors must initialize all owned fields before the instance escapes.
+- **Transfer checks** — Assigning an owned value to a new owner implicitly transfers ownership. The compiler **MUST** reject assignments that would create cycles or cause two owners to reference the same owned instance simultaneously.
+
+### 5.2 Variable Declarations
+
+- Syntax:<br>
+  `storage-modifiers? type declarator ('=' expression)? ';'`
+- Storage modifiers include `static`, `shared`, `owned`, `const`, `atomic`, etc., and apply to the entire declaration list.
+- Local variables declared with `var` must have an initializer so the type can be inferred. Example:<br>
+  `var renderer = new Renderer(); // inferred as Renderer (owned)`
+- **Owned locals** — `Renderer renderer;` allocates an owned instance whose destruction occurs when the scope exits unless ownership is transferred outward.
+- **Reference locals** — `&Renderer rendererRef = this.renderer;` points to an existing object without affecting its lifetime. The compiler **MUST** ensure the reference cannot outlive the target.
+- **Shared locals** — `$Texture cache = textureManager.acquire("menu");` resides in the shared lifetime domain; releasing it follows the shared-domain protocol (reference counting, handles, etc.).
+- Variables declared without initializers enter an uninitialized state. Access before assignment is a compile-time error except for `shared` handles explicitly allowed to represent `null`.
+
+### 5.3 Constant Declarations
+
+- Syntax:<br>
+  `const modifiers? type identifier '=' constant-expression ';'`
+- Constants are immutable after initialization and **MUST** be initialized with compile-time evaluable expressions. When declared inside a class, they share the instance’s ownership domain unless also marked `static`.
+- Constants can inhabit any storage domain:
+  - `public static const i32 Version = 3;` lives in the static domain.
+  - `const Renderer renderer = new Renderer();` makes an owned field that cannot be reassigned but still follows deterministic destruction.
+- Referencing a non-owning or shared type in a `const` declaration freezes the binding (the reference target may still change internally if it is shared/mutable).
+
+### 5.4 Function Declarations
+
+- Syntax:<br>
+  `function-modifiers? func name(parameter-list) :> return-type maybe clause? body`
+- Parameter semantics:
+  - Unmarked parameter types are owned inputs; ownership transfers into the function scope. The function **MUST** either consume or return ownership before exit.
+  - `&Type` parameters borrow references; the caller retains responsibility for lifetime.
+  - `$Type` parameters share handles and follow the shared domain rules.
+- Return values:
+  - Returning `Type` transfers ownership to the caller.
+  - Returning `&Type` borrows from the callee’s state; the compiler **MUST** ensure the referenced object outlives the call.
+  - Returning `$Type` yields a shared handle; lifetime is governed by the shared domain.
+- Functions may declare `maybe` clauses to signal error-aware returns. All ownership guarantees still apply when a function returns via an error path.
+- `static` functions reside in the module or type scope without implicit `this`. Instance methods receive `this` as an owned (`this`) or non-owning (`&this`) receiver depending on modifiers defined in §9.
+
+### 5.5 Type Declarations
+
+Type declarations define new nominal types and establish the ownership semantics for their members. This section focuses on the canonical forms listed in the table of contents; traits and aliases will be specified later.
+
+- **Fields** — Unmarked object fields are owned by the containing instance. Use `&Type` for non-owning references or `$Type` for shared handles.
+- **Constructors** — Must initialize all owned fields before returning. Missing initialization is a compile-time error.
+- **Destructors** — Execute after owned children are destroyed (deterministic destruction per the Ownership & Lifetime Model).
+- **Static members** — Live in the static domain and never participate in the ownership tree.
+- **Nested types** — Inherit the enclosing type’s visibility defaults but form independent ownership domains when instantiated.
+
+#### 5.5.1 Class Declarations
+
+- Syntax:<br>
+  `class-modifiers? class Name(primary-parameter-list?) base-clause? { member* }`
+- Classes are reference types that participate in inheritance via `:>` and may implement interfaces/traits once those sections are defined.
+- Ownership defaults:
+  - Instance fields of type `Type` are owned by the class instance.
+  - Constructors accept owned parameters unless annotated `&` or `$`.
+  - Returning `this` (explicitly or implicitly) transfers ownership to the caller constructing the instance.
+- Constructors must call exactly one base constructor (if a base exists) before accessing inherited fields.
+- Destructors (`~Name`) run after all owned fields and base destructors complete.
+- Accessors (`get`, `set`) inherit the field’s ownership semantics; a `get` on an owned field returns `&Type` unless explicitly annotated to transfer ownership.
+
+#### 5.5.2 Struct Declarations
+
+- Syntax mirrors classes but structs are value types stored inline.
+- Copy semantics:
+  - Struct assignment copies every field. If a field is owned, the copy becomes a transfer (the original field is invalidated) unless the field type explicitly permits duplication (e.g., bitwise-copyable primitives). **OPEN ISSUE: Copy traits** will formalize duplicable types.
+  - Structs cannot contain `$Type` fields unless the shared handle is copyable.
+- Because structs live inline, their destructors (if any) run when the containing scope releases the struct (end of local scope, owning field destruction, etc.).
+- Structs cannot participate in inheritance but may implement interfaces/traits once specified.
+
+#### 5.5.3 Enum Declarations
+
+- Enums are nominal tagged unions with a fixed set of cases. Syntax:<br>
+  `enum Name { CaseA, CaseB(ValueType), ... }`
+- Cases may carry payloads. Payload ownership follows the same rules as fields: unmarked payload types are owned by the enum instance.
+- Enums are value types; copying behaves like structs (payloads are duplicated or transferred depending on their types).
+- Pattern matching exhaustiveness will be enforced in §7. For now, the declaration must list every case explicitly; forward declarations are not allowed.
+
+#### 5.5.4 Interface Declarations
+
+- Interfaces declare method signatures and property contracts without providing storage.
+- Syntax:<br>
+  `interface Name { signature* }`
+- Interfaces do not participate directly in ownership. Methods defined by an interface adopt the ownership semantics spelled out in §5.4 when implemented by a concrete type.
+- A class or struct may implement multiple interfaces. The compiler **MUST** verify that implementations satisfy every signature exactly once.
+- Interfaces cannot declare fields. They may declare associated types in a future revision (**OPEN ISSUE: Interface associated types**).
+
+These subsections ensure each type form has clear lifetime responsibilities, enabling the compiler to enforce deterministic destruction and ownership transfer consistently across the language.
+
+## 6. Scope and Accessibility
+
+Scope determines which declarations are visible at a given source location, while accessibility controls whether those declarations can be used outside their visibility domain. Cloth enforces lexical scoping: the textual structure of the program alone determines scope boundaries.
+
+### 6.1 Scope Rules
+
+Scope boundaries in Cloth are determined purely by source structure. Every identifier belongs to exactly one scope, and scopes nest lexically. The subsections below correspond directly to the table of contents items.
+
+#### 6.1.1 Block Scope
+
+- A block scope begins at `{` and ends at the matching `}`. Each block creates a fresh symbol table for locals, labels, and nested declarations.
+- Declarations within a block are visible from their declaration point to the end of the block. Forward references to later declarations in the same block are not allowed unless the construct explicitly supports hoisting (e.g., function prototypes when introduced).
+- Control-flow statements (`if`, `for`, `while`, `switch`, `match`, `catch`, `finally`) implicitly form blocks. Conditions for these constructs **MUST** be parenthesized (`if (condition)`, `while (condition)`, `for (...; condition; ...)`). Braces are required in formal documentation examples and **SHOULD** be enforced by tooling to avoid ambiguity, even for single-statement bodies.
+- Lifetime behavior:
+  - Owned locals (`Type name;`) are destroyed when the block exits unless ownership is moved out of the block.
+  - Reference locals (`&Type`) become invalid the moment the referenced object leaves scope; the compiler **MUST** diagnose potential dangling references.
+  - Shared locals (`$Type`) release their handle according to the shared-domain rules when the block terminates.
+- Variables declared in initialization clauses (`for (var i = 0; ...)`) belong to the loop’s block scope and are invisible outside the loop body.
+
+#### 6.1.2 Function Scope
+
+- Function scope encompasses:
+  1. The parameter list (including default argument expressions).
+  2. The function body.
+  3. Any nested declarations (local functions, lambdas, local classes) introduced inside the function.
+- Parameters are in scope throughout the entire body, regardless of their textual position. Default argument expressions evaluate in the caller’s context but may only reference earlier parameters.
+- Instance methods implicitly introduce `this` (owned or borrowed depending on modifiers) into function scope. Static methods do not have implicit `this`.
+- Captures:
+  - Lambdas or local functions may capture variables from enclosing scopes. Capturing an owned variable transfers or borrows ownership based on the capture syntax (**OPEN ISSUE: Capture modes**). Regardless, the compiler **MUST** ensure the capture cannot outlive the owned value’s scope.
+- Return statements may reference any identifier in function scope subject to lifetime rules. Returning `&Type` requires proof that the referenced object outlives the caller.
+- Exception handlers (`catch`, `defer`, `finally`) nest inside function scope but may introduce their own block scopes per §6.1.1.
+
+#### 6.1.3 Type Scope
+
+- Each type (class, struct, interface, enum, trait when defined) defines a member scope that includes:
+  - Fields, properties, and constants.
+  - Methods, constructors, destructors.
+  - Nested types and aliases.
+- Members declared inside a type are visible throughout the type body unless a specific rule restricts forward references (e.g., field initializers referencing later fields is an **OPEN ISSUE: Field initializer order**).
+- Nested types inherit access to the enclosing type’s `private` members but remain separate nominal types with their own scopes.
+- Type scope is sealed: members do not automatically leak into the enclosing module or into instances. Access requires qualification (`instance.member` or `Type.member` for static members).
+- Partial declarations (future feature) **MUST** merge their member scopes as if they were authored in a single block, while respecting visibility and shadowing rules.
+
+These scope definitions ensure every identifier’s lifetime and visibility are determined unambiguously by the program’s lexical layout.
+
+### 6.2 Name Resolution
+
+Name resolution searches scopes from innermost to outermost:
+
+1. Current block scope.
+2. Enclosing blocks up to the function scope.
+3. Function parameters and implicit `this` (for instance members).
+4. Type members (fields, methods, nested types).
+5. Module-level declarations within the same compilation unit.
+6. Imported symbols (first selective imports, then fully qualified module names).
+7. Global built-ins (primitive types, meta keywords), which are always accessible.
+
+- Qualified names (`module.symbol`, `object.member`) bypass lexical lookup for the leading component and start resolving from the specified container.
+- If a name resolves to multiple candidates (e.g., through selective imports), the compiler **MUST** produce an ambiguity error and require explicit qualification.
+- `this` is implicitly available inside instance members and resolves to the owning type. Static members have no implicit `this` and cannot access instance members without an explicit receiver.
+
+### 6.3 Shadowing Rules
+
+- Local variables may shadow names from outer block scopes, but shadowing **MUST NOT** occur across different storage domains when it would cause ownership ambiguity. For example, a local variable cannot shadow a field of the same name within the same method; the compiler **MUST** reject such redeclarations.
+- Parameters may not shadow fields of the same type scope. Use `this.field` to disambiguate rather than redeclaring names.
+- Type names cannot be shadowed within the same module. Attempting to declare a class `Renderer` inside a module that already contains `Renderer` is an error even if the declarations appear in different files.
+- Imports cannot shadow local declarations. If an imported name conflicts with a local declaration, the import **MUST** be aliased using `as`.
+
+### 6.4 Visibility Modifiers
+
+Visibility specifies whether a declaration can be accessed from other scopes or modules. Cloth defines three primary modifiers plus block-scoped defaults:
+
+- **public** — Accessible from any module. Public declarations form the module’s exported surface. Changing a public member’s signature is a breaking change.
+- **internal** — Accessible only within the declaring module (all compilation units sharing the same `module` statement). This is the default for top-level declarations.
+- **private** — Accessible only within the declaring type or block. This is the default for members declared inside a type.
+
+Rules:
+
+- A declaration may not increase visibility relative to its container. For example, a `private` nested class cannot contain a `public` field that references the enclosing private type if that field would leak the private type outside its allowed visibility.
+- Visibility is orthogonal to scope: a `public` field still requires qualification (`instance.field`) and obeys scope rules when referenced.
+- Attributes defined by this specification may refine visibility (e.g., `shared`, `owned`, `static` when used as annotations). Implementations **MUST NOT** introduce additional access modifiers beyond those enumerated here without a future revision of the language spec.
+- When multiple partial declarations of a type exist (future feature), they must agree on visibility for overlapping members.
+
+
+## 7. Expressions
+
+Expressions produce values, references, or effects. Cloth evaluates expressions deterministically from left to right unless an operator states otherwise. Every expression has a static type (see Section 4) and follows the ownership semantics in Section 5 and in the Ownership & Lifetime Model.
+
+### 7.1 Expression Categories
+
+- **Value expressions** yield owned values (`Type`).
+- **Reference expressions** yield `&Type` borrows; the referenced object must outlive the expression using it.
+- **Shared expressions** yield `$Type` handles in the shared lifetime domain.
+- **Constant expressions** evaluate entirely at compile time and may initialize `const` members, enum discriminants, and annotations.
+- **Meta expressions** use `expr :: META_KEYWORD` (see Section 2.3.3) to query compile-time information. They must be deterministic and side-effect free.
+
+### 7.2 Operator Precedence and Associativity
+
+Highest precedence first (operators on the same row associate left-to-right unless noted):
+
+1. Primary: `expr.member`, `call()`, literals, `expr :: META`
+2. Unary (right-to-left): `+`, `-`, `!`, `~`, `as`, `as?`
+3. Multiplicative: `*`, `/`, `%`
+4. Additive: `+`, `-`
+5. Bitwise AND: `&`
+6. Bitwise XOR: `^`
+7. Bitwise OR: `|`
+8. Comparison: `<`, `<=`, `>`, `>=`, `is`, `in`
+9. Equality: `==`, `!=`
+10. Logical AND: `and`
+11. Logical OR: `or`
+12. Null-coalescing (right-to-left): `??`
+13. Ternary (right-to-left): `?:`
+14. Assignment (right-to-left): `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`
+
+Operators not listed are reserved for future revisions.
+
+### 7.3 Assignment Expressions
+
+- Syntax: `target assignment-operator expression`.
+- Owned targets receive ownership of the right-hand side; the previous value is destroyed unless ownership moved elsewhere.
+- Reference targets (`&Type`) rebind to the new referent without affecting ownership.
+- Shared targets (`$Type`) update their handle, releasing the prior handle via the shared-domain protocol.
+- Compound assignments evaluate the target once before applying the arithmetic or bitwise operator.
+- Assignment expressions evaluate to the assigned value, enabling chains (e.g., `a = b = 0`).
+
+### 7.4 Comparison Expressions
+
+- Operators: `==`, `!=`, `<`, `<=`, `>`, `>=`, `is`, `in`.
+- Equality compares primitives by value, strings by code units, references by identity, and shared handles by pointer equality unless overridden via traits.
+- Relational operators apply to numeric primitives and to types that opt in via comparison traits (future Section 9). Unsupported usage is a compile-time error.
+- `is` performs runtime type checks and supports guarded bindings (`if (value is Renderer renderer)`).
+- `in` tests membership (e.g., `value in array`). Built-in collections rely on equality; user-defined collections may customize membership semantics.
+
+### 7.5 Logical Expressions
+
+- Operators: `and`, `or`.
+- `lhs and rhs` evaluates `rhs` only if `lhs` is `true`; `lhs or rhs` evaluates `rhs` only if `lhs` is `false`.
+- Operands must be `bool`; no implicit conversions occur.
+
+### 7.6 Bitwise Expressions
+
+- Operators: `&`, `|`, `^`, `~`.
+- Operands must be integer or `bit` types. Results use the wider operand type.
+- `~` is unary and returns the same type as its operand.
+
+### 7.7 Arithmetic Expressions
+
+- Operators: `+`, `-`, `*`, `/`, `%`, unary `+`, unary `-`.
+- Signed overflow is **undefined behavior**; unsigned arithmetic wraps modulo 2^n (where *n* is the bit width).
+- Division by zero raises a runtime error for integers and follows IEEE rules (`NaN`, `±Infinity`) for floating-point.
+- Mixed-type arithmetic applies numeric promotions; otherwise an explicit cast is required.
+
+### 7.8 Null-Coalescing / Fallback Expressions
+
+- Operator: `expr1 ?? expr2`.
+- `expr1` must be nullable (`T?`). If non-null, the expression yields `expr1`; otherwise it evaluates and yields `expr2`.
+- Right-associative: `a ?? b ?? c` == `a ?? (b ?? c)`.
+- Frequently paired with safe casts: `(input as? u32) ?? throw new NegativeNumberError("Negative number");`.
+
+### 7.9 Ternary Expressions
+
+- Syntax: `condition ? whenTrue : whenFalse`.
+- `condition` must be `bool`. The other operands must convert to a common type; otherwise the expression is ill-typed.
+- Only the selected branch evaluates. Ownership transfers according to the branch result.
+
+### 7.10 Lambda Expressions
+
+- Syntax (preview): `|params| expression` or `|params| { statements }`.
+- Lambdas evaluate to delegates inferred from context (function pointer, interface, trait). **OPEN ISSUE: Callable traits** will finalize typing rules.
+- Capturing owned values moves them into the lambda unless explicitly borrowed; capturing references borrows them subject to lifetime checks.
+- Lambdas may include modifiers such as `async` or `maybe`, mirroring normal functions.
+
+### 7.11 Cast Expressions
+
+- `expr as TargetType` performs explicit casts (see Section 4.8.1) and throws when the conversion fails.
+- `expr as? TargetType` performs safe casts (see Section 4.8.2) and yields `TargetType?`, returning `null` on failure.
+- Cast expressions bind tighter than multiplicative operators but looser than member access.
+
+### 7.12 Call Expressions
+
+- Syntax: `callable(arguments)`.
+- Evaluation order: evaluate the callable, evaluate arguments left-to-right, apply implicit conversions, then transfer ownership based on parameter markers (`Type`, `&Type`, `$Type`).
+- Functions declared with `maybe` may signal errors; callers must handle these paths explicitly.
+- Overload resolution occurs at compile time; ambiguous calls are errors.
+
+### 7.13 Member Access Expressions
+
+- Syntax: `receiver.member`.
+- `receiver` may be an expression, module, or type. Static members require the type name; instance members require an expression.
+- Accessing nullable receivers requires prior null checks; no implicit safe-navigation operator exists yet.
+- `::` remains reserved for selective imports and meta invocations, not general member access.
+
+These expression rules define parsing, evaluation order, and ownership interactions, paving the way for the statement semantics in Section 8.
