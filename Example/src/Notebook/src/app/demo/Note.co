@@ -1,0 +1,19 @@
+module app.demo;
+
+import std.io::{println};
+
+public class Note(String text) {
+    private const String value { public get; };
+
+    public Note {
+        this.value = text;
+    }
+
+    public func print() :> void {
+        println(" - " + getValue());
+    }
+
+    public ~Note {
+        println("Destroying Note(\"" + getValue() + "\")");
+    }
+}

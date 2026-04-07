@@ -1,0 +1,13 @@
+module app.demo;
+
+import std.io::{println};
+
+public class Log() {
+    public static func info(String message) :> void {
+        println("[info] " + message);
+    }
+
+    public static func warn(String message) :> void {
+        println("[warn] " + message);
+    }
+}

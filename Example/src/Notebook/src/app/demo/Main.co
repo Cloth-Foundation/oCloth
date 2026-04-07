@@ -1,0 +1,77 @@
+module app.demo;
+
+import std.io::{println};
+
+public class Main(String[] args) maybe ParseError, NotebookFullError {
+    private const $SharedCounter counter { public get; };
+    private Notebook primary { public get; };
+    private Notebook archive { public get; private set; };
+
+    public Main {
+        Log.info("Starting notebook demo");
+
+        this.counter = new SharedCounter(0);
+        this.primary = new Notebook("Primary", getCounter());
+        this.archive = new Notebook("Archive", getCounter());
+
+        Note welcome = new Note("Welcome to Cloth");
+        Note syntax = new Note("Ownership is explicit");
+        Note methods = new Note("Methods, moves, and cleanup all work together");
+
+        getPrimary().add(welcome);
+        getPrimary().add(syntax);
+
+        tryMoveFirstNote();
+        getArchive().add(methods);
+
+        inspectReferences();
+        parseDemo();
+        localAllocationDemo();
+        dumpState();
+
+        Log.info("Main constructor completed");
+    }
+
+    private func tryMoveFirstNote() :> void maybe NotebookFullError {
+        Note? moved = getPrimary().removeFirst();
+
+        if (moved != null) {
+            getArchive().add(moved);
+        }
+    }
+
+    private func inspectReferences() :> void {
+        &Note? head = getArchive().peekFirst();
+
+        if (head != null) {
+            println("Archive first note (borrowed): " + head.getValue());
+        }
+    }
+
+    private func parseDemo() :> void maybe ParseError {
+        const u32 count = Parser.parsePositiveInt("7");
+        println("Parsed positive count: " + count);
+    }
+
+    private func localAllocationDemo() :> void {
+        Note temp = new Note("Temporary scope-owned note");
+        temp.print();
+
+        delete temp;
+    }
+
+    private func dumpState() :> void {
+        println("");
+        getPrimary().print();
+        println("");
+        getArchive().print();
+        println("");
+        println("Shared total added across notebooks: " + getCounter().getValue());
+        println("Main title type: " + "demo"::TYPEOF);
+        println("Main title length: " + "demo"::LENGTH);
+    }
+
+    public ~Main {
+        Log.warn("Main shutting down");
+    }
+}

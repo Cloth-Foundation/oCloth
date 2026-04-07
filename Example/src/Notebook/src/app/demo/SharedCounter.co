@@ -1,0 +1,21 @@
+module app.demo;
+
+public class SharedCounter(i32 start) {
+    private i32 value { public get; private set; };
+
+    public SharedCounter {
+        this.value = start;
+    }
+
+    public func increment() :> void {
+        this.value += 1;
+    }
+
+    public func add(i32 amount) :> void {
+        this.value += amount;
+    }
+
+    public ~SharedCounter {
+        // intentionally quiet; imagine shared-domain bookkeeping here
+    }
+}

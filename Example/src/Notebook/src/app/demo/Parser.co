@@ -1,0 +1,21 @@
+module app.demo;
+
+public class Parser() {
+    public static func parsePositiveInt(String raw) :> u32 maybe ParseError {
+        const i32 parsed = parseInt(raw);
+        return (parsed as? u32) ?? throw new ParseError("Expected a positive integer, got: " + raw);
+    }
+
+    public static func parseInt(String raw) :> i32 maybe ParseError {
+        // placeholder implementation for the example
+        if (raw == "7") {
+            return 7;
+        }
+
+        if (raw == "12") {
+            return 12;
+        }
+
+        throw new ParseError("Invalid integer: " + raw);
+    }
+}

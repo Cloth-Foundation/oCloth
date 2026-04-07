@@ -1,0 +1,73 @@
+module app.demo;
+
+import std.io::{println};
+
+public class Notebook(String title, $SharedCounter counter) {
+    private const String name { public get; };
+    private $SharedCounter sharedCount { public get; };
+    private Note? first { public get; private set; };
+    private Note? second { public get; private set; };
+
+    public Notebook {
+        this.name = title;
+        this.sharedCount = counter;
+        this.first = null;
+        this.second = null;
+    }
+
+    public func add(Note note) :> void maybe NotebookFullError {
+        if (getFirst() == null) {
+            this.first = note;
+            getSharedCount().increment();
+            return;
+        }
+
+        if (getSecond() == null) {
+            this.second = note;
+            getSharedCount().increment();
+            return;
+        }
+
+        throw new NotebookFullError("Notebook is full: " + getName());
+    }
+
+    public func print() :> void {
+        println("Notebook: " + getName());
+
+        if (getFirst() != null) {
+            getFirst().print();
+        }
+
+        if (getSecond() != null) {
+            getSecond().print();
+        }
+    }
+
+    public func getCount() :> i32 {
+        i32 total = 0;
+
+        if (getFirst() != null) {
+            total += 1;
+        }
+
+        if (getSecond() != null) {
+            total += 1;
+        }
+
+        return total;
+    }
+
+    public func peekFirst() :> &Note? {
+        return getFirst();
+    }
+
+    public func removeFirst() :> Note? {
+        Note? moved = getFirst();
+        this.first = null;
+        return moved;
+    }
+
+    public ~Notebook {
+        println("Destroying Notebook(\"" + getName() + "\") with " + getCount() + " notes left");
+    }
+}
