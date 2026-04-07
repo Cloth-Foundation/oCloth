@@ -226,56 +226,56 @@ Additional specialized terminology (e.g., borrowing, shared handles, maybe claus
 
 ## 2. Lexical Structure
 
-Lexical analysis converts normalized source text into a stream of tokens consumed by the parser. This stage is purely syntactic: it is not allowed to perform name lookup, type checking, or macro expansion. Unless explicitly stated, all rules in this section apply uniformly to module headers, declarations, expressions, and embedded snippets such as attribute arguments.
+Lexical analysis converts normalized source text into a stream of tokens consumed by the parser. It is purely syntactic—no name lookup, type checking, or macro expansion may occur during this stage. Unless explicitly noted, every rule below applies equally to module headers, declarations, expressions, attribute arguments, and embedded code snippets.
 
-### 2.1 Source Text and Encoding
+### 2.1 Source Text and Normalization
 
-#### 2.1.1 Encoding Requirements
+#### 2.1.1 Encoding
 
-- Source files **MUST** be encoded as UTF-8. Implementations **MUST** accept UTF-8 sequences without a byte-order mark (BOM) and **MAY** accept BOM-prefixed files by silently discarding the BOM before lexing.
-- Any byte sequence that is not well-formed UTF-8 is ill-formed source text; implementations **MUST** issue a diagnostic and **MUST NOT** continue with implicit replacement characters.
-- The logical source text is defined as the sequence of Unicode scalar values produced after decoding. Toolchains operating on other encodings (for example editors saving in UTF-16) **MUST** transcode to UTF-8 before invoking a Cloth compiler.
+- Source files **MUST** be encoded as UTF-8. Implementations **MUST** accept UTF-8 without a byte-order mark (BOM) and **MAY** accept BOM-prefixed files by discarding the BOM before lexing.
+- Any byte sequence that is not well-formed UTF-8 is ill-formed source text. Implementations **MUST** issue a diagnostic and **MUST NOT** silently recover by inserting replacement characters.
+- Tooling that edits Cloth code in another encoding (for example UTF-16 editors) **MUST** transcode to UTF-8 prior to invoking a compiler or formatter.
 
-#### 2.1.2 Line Terminators and Normalization
+#### 2.1.2 Line Terminators
 
-- The line terminator set consists of LF (`U+000A`), CR (`U+000D`), and the two-character sequence CR LF. During decoding the implementation **MUST** normalize every CR LF pair to a single LF token and **MAY** normalize lone CR characters to LF for internal bookkeeping. Other Unicode line separators (e.g., `U+2028`) are not currently recognized; encountering them outside of string literals is **undefined behavior** until Section 7 clarifies the Unicode profile (**OPEN ISSUE**).
-- The logical line number counter increments after each LF produced by normalization. Column numbers reset to `1` immediately after incrementing the line number.
+- The only recognized line terminators are LF (`U+000A`), CR (`U+000D`), and the two-character sequence CR LF. Compilers **MUST** normalize CR LF to a single LF token. Lone CR characters MAY be normalized to LF for internal bookkeeping but retain the same line number semantics.
+- Other Unicode separators (`U+2028`, `U+2029`, etc.) are illegal outside of string literals. Encountering one **MUST** produce a diagnostic that identifies the offending code point.
+- Logical line numbers increment after each normalized LF. Columns reset to `1` immediately afterward.
 
-#### 2.1.3 Permitted Control Characters
+#### 2.1.3 Control Characters
 
-- Horizontal tab (`U+0009`), carriage return, line feed, and space (`U+0020`) are the only control characters recognized by the lexer outside of string literals. Vertical tab, form feed, NUL, and other C0 controls are **forbidden** and **MUST** trigger diagnostics identifying the offending code point.
-- Non-ASCII Unicode scalars (e.g., emoji) are currently **not** permitted in identifiers or operators. They may appear only inside string literals. Extending the identifier grammar to the Unicode `XID_Start`/`XID_Continue` sets is tracked as **OPEN ISSUE: Unicode Identifiers**.
+- Outside of string literals the only permitted control characters are horizontal tab (`U+0009`), carriage return, line feed, and space (`U+0020`). Vertical tab, form feed, NUL, and other C0 controls are forbidden and **MUST** trigger diagnostics.
+- Non-ASCII Unicode scalars are not permitted in identifiers or operators. They may appear only inside string literals or character literals where their encoding is explicit.
 
-#### 2.1.4 File Boundaries and Concatenation
+#### 2.1.4 Logical Files
 
-- Each physical file constitutes an independent tokenization unit. The lexer **MUST** append a single `EndOfFile` meta token after consuming the last code point of the unit.
-- Tooling that synthesizes source text (e.g., REPLs) **MAY** present virtual buffers; however, they **MUST** obey the same encoding and normalization rules.
-- Implementations **MAY** expose command-line options that concatenate multiple files before lexing (e.g., `-cat`). When they do, concatenation occurs byte-wise before normalization so that no phantom newline is inserted between files unless one already exists.
+- Each physical file forms its own token stream. After consuming the final code point the lexer **MUST** append a single `EndOfFile` meta token whose span starts and ends at the logical end position.
+- Tooling that synthesizes buffers (REPLs, notebooks, IDE snippets) **MUST** enforce the same decoding, normalization, and `EndOfFile` rules as disk-backed files.
+- Concatenation options (for example, `compiler -cat file1 file2`) operate on bytes before normalization. No extra newline is inserted between files unless one is already present.
 
-### 2.2 Tokens
+### 2.2 Tokenization Model
 
-- Tokens are maximal munch units: the lexer **MUST** always select the longest lexeme that matches any valid token category at the current position. When two categories match the same length, the precedence is _Identifier → Keyword → Literal → Operator/Delimiter → Meta_ unless overridden by explicit rules below.
-- Every token carries a `span` consisting of the start (inclusive) and end (exclusive) byte offsets together with line/column metadata. These coordinates allow tools to reconstruct the original lexeme losslessly.
-- The core token categories are:
-  1. **Identifiers** (`Identifier`) — user-defined names subject to the grammar in Section 2.5.
-  2. **Keywords** — reserved lexemes listed in Section 2.6; these also reuse the identifier grammar but are reclassified after lookup in the keyword table.
-  3. **Literals** — numeric and string forms described in Section 2.8.
-  4. **Operators and punctuation** — fixed symbol sequences defined in Section 2.7.
-  5. **Meta tokens** — either sentinels synthesized by the lexer (`EndOfFile`, recovery markers) or identifier-derived meta keywords (see Section 2.3) that carry semantic meaning during later compilation phases.
-- Tokenization **MUST** be deterministic: repeatedly lexing identical source text produces identical token streams, including whitespace spans associated with diagnostics.
+1. **Determinism** — Lexing the same source text twice **MUST** produce the same token sequence, including whitespace spans used for diagnostics.
+2. **Maximal munch** — The lexer **MUST** choose the longest lexeme that matches any token category at the current position. When two categories tie, the precedence order is Identifier → Keyword → Literal → Operator/Delimiter → Meta.
+3. **Spans** — Every token carries its start/end byte offsets plus line and column numbers. Tools rely on these spans to reconstruct lexemes and emit precise diagnostics.
+4. **Whitespace** — Whitespace and comments never become standalone tokens; they are separators only.
+
+The core token categories are identifiers, keywords, literals, operators/punctuation, and meta tokens (Section 2.3).
 
 ### 2.3 Meta Tokens
 
-Cloth exposes a dedicated meta-token channel for compile-time reflection and tooling coordination. Meta tokens never participate directly in expression grammar; later compilation phases consume them to drive meta-programming semantics or to report structured diagnostics.
+Meta tokens model compile-time queries and sentinel values independently from ordinary identifiers.
 
-#### 2.3.1 End-of-file and recovery sentinels
+#### 2.3.1 Sentinels
 
-- `EndOfFile` **MUST** be emitted after the final real token of each source unit. Its span starts and ends at the logical end position of the buffer and its lexeme is the empty string.
-- Implementations **MAY** introduce additional meta tokens to support error recovery (for example, `InsertedSemicolon`). Any such token **MUST** be documented and **MUST NOT** leak beyond diagnostic contexts. The reference implementation currently emits only `EndOfFile`; the design of recovery tokens is tracked as **OPEN ISSUE: Meta Recovery Tokens**.
+- `EndOfFile` **MUST** be emitted exactly once per logical file. No additional recovery tokens are standardized; implementations **MAY NOT** invent new sentinel kinds without a future revision of this document.
 
-#### 2.3.2 Meta keywords
+#### 2.3.2 Meta Keywords
 
-- Meta keywords are recognized only when two conditions hold simultaneously: (1) the identifier lexeme matches one of the following uppercase strings exactly (case-sensitive comparison) and (2) the immediately preceding non-whitespace tokens are `::` (an `OP_ColonColon`). When both conditions are satisfied the lexer emits a `Meta` token whose lexeme equals the source spelling; otherwise the same lexeme is emitted as a normal keyword token and carries no meta semantics.
+Meta keywords are recognized only when both conditions hold:
+
+1. The identifier lexeme matches one of the uppercase strings in the table below (case-sensitive).
+2. The immediately preceding non-whitespace token is `OP_ColonColon`.
 
 | Lexeme      | Summary                                          |
 |-------------|--------------------------------------------------|
@@ -291,44 +291,42 @@ Cloth exposes a dedicated meta-token channel for compile-time reflection and too
 | `TO_STRING` | Convert a value to a string representation.      |
 | `TYPEOF`    | Reflect the type of an expression.               |
 
-- Recognition is strictly uppercase. For example, `alignof` or `AlignOf` lexemes remain ordinary identifiers.
-- When a listed lexeme is not immediately preceded by `::`, it behaves like any other reserved keyword: it cannot be used as an identifier and, unless additional grammar assigns meaning, it has no effect.
-- These keywords remain reserved regardless of context so that tooling can highlight improper use, but the meta semantics described below apply only to the `value-or-type :: META_KEYWORD` form.
+Lexemes that fail either condition are treated as ordinary keywords. Because these words are reserved, user code **MUST NOT** redeclare them as identifiers.
 
-#### 2.3.3 Meta invocation syntax
+#### 2.3.3 Invocation Semantics
 
-- Meta tokens participate in expressions via the _meta invocation_ form:
+```
+meta-invocation ::= primary-expression '::' META_KEYWORD
+```
 
-  `meta-invocation ::= primary-expression '::' META_KEYWORD`
-
-  where `primary-expression` may be any value expression, literal, temporary, type designator, or object reference. If the parser does not observe the exact `primary-expression :: META_KEYWORD` shape, the trailing uppercase word is treated as an ordinary keyword token and **MUST NOT** be interpreted as meta.
-- The `::` sequence is the normal `OP_ColonColon` token. The parser **MUST** keep the meta keyword as a separate `Meta` token so later stages can distinguish `value::TYPEOF` from qualified identifiers.
-- Each meta invocation produces a value whose type is dictated by the keyword being invoked. For example, `"Hello" :: LENGTH` evaluates to an `i32` constant with the value `5`. Future sections will define the exact return type: implementers **MUST** follow those definitions once published.
-- Meta invocations are pure queries: they cannot mutate the operand and **MUST NOT** depend on hidden global state. When the operand is a compile-time constant, the result **SHOULD** be constant-folded.
-- Because meta keywords are reserved, attempting to reinterpret them as identifiers (e.g., `foo::TYPEOF` where `TYPEOF` was redefined) **MUST** be rejected before semantic analysis proceeds.
+- `primary-expression` may be any value expression, literal, temporary, type designator, or object reference.
+- The parser **MUST** preserve the meta keyword as a distinct `Meta` token so later phases can distinguish `value::TYPEOF` from qualified identifiers.
+- Meta invocations are pure queries: they have no side effects and **MUST NOT** depend on hidden global state. When the operand is a compile-time constant, implementations **SHOULD** fold the meta query to a constant.
 
 ### 2.4 Comments and Whitespace
 
-- Outside of string literals, whitespace consists of the characters identified in Section 2.1.3. The lexer **MUST** treat any contiguous sequence of whitespace as a separator between tokens and **MUST NOT** emit whitespace tokens.
-- **Line comments** begin with `//` and extend to, but do not include, the next LF or the end of the file. Line comments do not nest and may appear after other tokens on the same line.
-- **Block comments** begin with `/*` and terminate at the first subsequent `*/`. They **MUST NOT** nest; encountering a second `/*` before the closing `*/` keeps the original comment open. If the end of file occurs before `*/`, the implementation **MUST** emit an unterminated-comment diagnostic whose span starts at the initial `/*`.
-- The characters inside comments are ignored for all syntactic purposes but **DO** participate in line/column accounting so that diagnostics inside comments point to the correct line.
-- Cloth does not yet define doc-comment syntax distinct from the above. Specialized comment markers (e.g., `///`) remain reserved for future tooling integrations (**OPEN ISSUE: Documentation Comments**).
+- Outside of literals, whitespace is limited to the characters described in Section 2.1. The lexer treats any contiguous sequence as a separator and never emits whitespace tokens.
+- **Line comments** begin with `//` and extend through the next LF (excluded). They do not nest.
+- **Block comments** begin with `/*` and end with the first subsequent `*/`. Nested block comments are illegal; encountering a second `/*` before the closing delimiter keeps the original comment open. Reaching end of file before `*/` **MUST** report an unterminated-comment diagnostic.
+- Comment contents participate in line/column accounting so diagnostics inside comments still pinpoint the correct source location.
+- Doc comments use the same lexical forms; there is no special syntax such as `///`. Future documentation annotations will be introduced explicitly rather than via comment conventions.
 
 ### 2.5 Identifiers
 
-- Identifiers are case-sensitive and follow the grammar<br>
-  `identifier ::= identifier-start identifier-part*`<br>
-  `identifier-start ::= 'A'..'Z' | 'a'..'z' | '_'`<br>
-  `identifier-part ::= identifier-start | '0'..'9' | '$'`
-- The dollar sign may appear only after the first character. It exists to unblock generated symbol names (e.g., `MyType$meta`). Human-authored code **SHOULD** avoid `$` unless interoperating with generated artifacts.
-- A single underscore (`_`) is a legal identifier and typically denotes an intentionally unused binding; later sections may apply additional semantics.
-- Keywords listed in Section 2.6 **MUST NOT** be used as identifiers. The lexer determines keyword-ness through direct lexeme comparison prior to emitting the token.
-- Cloth currently restricts identifiers to ASCII per Section 2.1.3. Non-ASCII letters, digits beyond `0-9`, combining marks, and escape sequences inside identifiers are prohibited until Unicode identifiers are ratified (**OPEN ISSUE: Unicode Identifiers**).
+- Grammar:
+  ```
+  identifier ::= identifier-start identifier-part*
+  identifier-start ::= 'A'..'Z' | 'a'..'z' | '_'
+  identifier-part  ::= identifier-start | '0'..'9' | '$'
+  ```
+- Identifiers are ASCII only. Any attempt to embed non-ASCII scalars, escape sequences, or combining characters **MUST** be diagnosed.
+- `$` may appear only after the first character. It exists to support tooling-generated symbols (e.g., `MyType$meta`). Human-authored code SHOULD avoid `$` unless interoperating with generated artifacts.
+- `_` by itself is a legal identifier and conventionally denotes an intentionally unused binding.
+- Keywords listed in Section 2.6 **MUST NOT** be used as identifiers.
 
 ### 2.6 Keywords
 
-Keywords are reserved lexemes that always produce dedicated token kinds, even when they appear where an identifier would otherwise be expected. Cloth keywords are case-sensitive; `import` is a keyword while `Import` is an identifier. The current keyword set is grouped below for readability:
+Keywords always produce dedicated token kinds, even when used where an identifier would otherwise be legal. Cloth keywords are case-sensitive; `import` is a keyword while `Import` is not.
 
 | Category                     | Lexemes                                                                                                                                                                                                                                                                                                        |
 |------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -343,7 +341,7 @@ Notes:
 
 1. Synonyms such as `int`/`i32`, `long`/`i64`, `short`/`i16`, `uint`/`u32`, and `real`/`f64` all map to the same token kinds. Implementations **MUST** treat these lexemes identically during semantic analysis.
 2. The trait-related lexemes intentionally start with uppercase letters to visually distinguish directive blocks (e.g., `trait Override { ... }`). They remain reserved words even outside of trait contexts.
-3. The logical negation operator is spelled `!`; there is no `not` keyword today. If a textual alternative is desired, it **MUST** be added through the keyword table (**OPEN ISSUE: `not` keyword**).
+3. The logical negation operator is spelled `!`; no textual alternative exists in this revision.
 
 ### 2.7 Operators and Punctuation
 
@@ -361,7 +359,7 @@ The following symbol sequences form individual tokens. The lexer **MUST** apply 
 | `+=`, `-=`, `*=`, `/=`, `%=`     | compound assignment operators.                                                                           |
 | `==`, `!=`, `<`, `>`, `<=`, `>=` | comparison operators.                                                                                    |
 | `+`, `-`, `*`, `/`, `%`          | arithmetic operators.                                                                                    |
-| `&`, `                           | `, `^`, `~`                                                                                              | bitwise operators.                         |
+| `&`, `|`, `^`, `~`               | `OP_BitAnd`, `OP_BitOr`, `OP_BitXor`, `OP_BitNot`                                                        | Bitwise operators.                         |
 | `!`                              | logical negation.                                                                                        |
 | `.`                              | member access.                                                                                           |
 | `,`                              | list separator.                                                                                          |
@@ -373,7 +371,7 @@ The following symbol sequences form individual tokens. The lexer **MUST** apply 
 | `@`                              | attribute introducer.                                                                                    |
 | `#`                              | compiler directive introducer (future use).                                                              |
 | `$`                              | special symbol used inside identifiers; as a standalone token it is reserved for future meta-constructs. |
-| `?`                              | ternary introducer / placeholder token (semantics defined in Section 7).                                        |
+| `?`                              | ternary introducer / placeholder token (semantics defined in Section 7).                                 |
 | `` ` ``                          | template or meta binding introducer (future use).                                                        |
 
 Any character not listed above and not part of another token category is illegal outside string literals and **MUST** raise a diagnostic.
@@ -393,7 +391,7 @@ Any character not listed above and not part of another token category is illegal
   | `0x` / `0X`           | 16   | `0-9`, `a-f`, `A-F` |
 
   Implementations **MUST** reject digits that do not belong to the selected radix, and they **MUST** report an error when a literal mixes multiple prefixes.
-- Digit separators remain reserved (**OPEN ISSUE: Digit Separators**); inserting `_` inside a literal is currently invalid.
+- Digit separators are not supported. Introducing `_` (or any other separator) inside a literal is a lexical error.
 - The optional **type suffix** is a single ASCII letter chosen from `{ b, B, i, I, l, L, u, U }` and indicates the canonical type prior to contextual conversions:
 
   | Suffix    | Canonical type | Notes                                                                        |
@@ -408,8 +406,10 @@ Any character not listed above and not part of another token category is illegal
 
 #### 2.8.2 Floating-Point Literals
 
-- A floating-point literal matches the grammar:<br>
-  `float-literal ::= digits? '.' digits? type-suffix?` where `digits` is one or more decimal digits and `type-suffix` is described below. At least one side of the decimal point **MUST** contain digits, enabling forms such as `.5`, `123.`, and `123.456`. Exponent notation (`1.0e+3`) remains unspecified (**OPEN ISSUE: Exponent Notation**).
+- Grammar:<br>
+  `float-literal ::= digits? '.' digits? type-suffix?`
+
+  At least one side of the decimal point **MUST** contain digits, enabling forms such as `.5`, `123.`, and `123.456`. Scientific/exponent notation is currently unsupported; attempting to write `1.0e+3` is a lexical error.
 - Literals may optionally carry a single-letter type suffix chosen from `{ f, F, d, D }`:
 
   | Suffix    | Canonical type                       |
@@ -419,7 +419,7 @@ Any character not listed above and not part of another token category is illegal
 
   Absence of a suffix defaults to `double`. As with integers, the suffix selects the literal’s canonical type but does not freeze its width; contextual conversion may widen or narrow the literal if required by the target expression.
 - Because trailing-only or leading-only digits are legal, the lexer **MUST** treat `123.` and `.123` as single float literals rather than `Integer`/`OP_Dot` combinations. When neither side contains digits (i.e., a bare `.`), the token remains `OP_Dot`.
-- The literal is represented as `Float(value)` where `value` is the IEEE double produced by interpreting the textual lexeme (after removing the suffix). Implementations **MUST** reject strings that their runtime cannot parse.
+- The literal is represented as `Float(value)` where `value` is the IEEE double produced by interpreting the textual lexeme (after removing the suffix). Invalid decimal spellings **MUST** be rejected.
 
 #### 2.8.3 Byte Literals
 
@@ -438,12 +438,12 @@ Any character not listed above and not part of another token category is illegal
 #### 2.8.5 Character Literals
 
 - Character literals are enclosed in single quotes (`'A'`). Exactly one Unicode scalar value **MUST** appear between the quotes, either directly or via an escape sequence.
-- Supported escapes mirror string literals: `\\n`, `\\r`, `\\t`, `\\\"`, `\\\\`, and `\\'`. Implementations **MAY** additionally recognize hexadecimal escapes (`\\xNN`) or Unicode escapes (`\\u{XXXX}`); expanded coverage is **OPEN ISSUE: Unicode Escape Coverage**.
+- Supported escapes mirror string literals: `\\n`, `\\r`, `\\t`, `\\\"`, `\\\\`, and `\\'`. Hexadecimal (`\\xNN`) and Unicode (`\\u{XXXX}`) escapes are accepted; invalid sequences are diagnosed.
 - The literal’s canonical type is `char`. It promotes to `int`, `byte`, or `u32` via zero-extension of the scalar’s code point.
 - Unescaped control characters prohibited by Section 2.1.3, stray surrogate halves, and multi-code-point grapheme clusters **MUST** be rejected.
 #### 2.8.6 string Literals
 
-- string literals are enclosed in double quotes (`"`). The closing quote **MUST** appear on the same logical line unless explicitly escaped; encountering a newline before the closing quote is currently diagnosed as `unterminated string literal`. Multiline string syntax is **OPEN ISSUE: Multiline string literals**.
+- string literals are enclosed in double quotes (`"`). The closing quote **MUST** appear on the same logical line unless escaped. Encountering a newline before the closing quote is diagnosed as an unterminated string literal.
 - Backslash escapes supported today are `\n`, `\r`, `\t`, `\"`, and `\\`. Any other character following `\` results in that character being inserted literally; the reference implementation does not yet reject unknown escapes, but the specification treats them as reserved and **recommends** emitting diagnostics so that future escape sequences can be added without changing runtime meaning.
 - string literals may contain arbitrary Unicode scalar values except unescaped control characters forbidden by Section 2.1.3. Implementations **MUST** track the original span so that diagnostics within strings (e.g., invalid escape) can pinpoint the problematic character.
 
@@ -453,238 +453,240 @@ Any character not listed above and not part of another token category is illegal
 - `null` denotes the absence of an object reference. Its nullability semantics are governed by Section 7.
 - `NaN` is a keyword literal that maps to the IEEE Not-a-Number value. It is case-sensitive and **MUST** appear with capital `N`.
 
-#### 2.8.8 Future Literal Forms
+#### 2.8.8 Unsupported Literal Forms
 
-- Byte-array literals, template strings, numeric separators, exponent notation, and additional escape forms are intentionally unspecified. Each feature will describe its own lexical form before becoming part of this section. Until then, any use of such syntax **MUST** produce a diagnostic so that programs do not silently depend on unstable behavior.
+Byte-array literals, template strings, numeric separators, additional float notations, and new escape sequences are not part of this revision. Any attempt to use such syntax **MUST** produce a diagnostic so programs do not rely on undefined behavior.
 
 ## 3. Program Structure
 
-Cloth compilation is organized around modules and predictable file layouts so that tooling, build systems, and developers can reason about codebases without scanning every file. This section introduces the structural rules that every compilation unit (as defined in Section 1.3) **MUST** satisfy. Unless the manifest groups files explicitly via `[[units]]` (Section 13.5), each source file belongs to exactly one compilation unit derived from its `module` declaration, and all files contributing to that module are analyzed together.
+Source files, modules, and compilation units form the backbone of every Cloth program. This section defines how source files map to modules, how modules resolve one another, and how top-level declarations are organized so that tooling can analyze large codebases deterministically.
 
-### 3.1 Parsing Model and Expectations
+### 3.1 Compilation Units
 
-- Each compilation unit follows the grammar<br>
-  `compilation-unit ::= module-declaration import-section? declaration-block`
-- The `module` declaration **MUST** be the first non-comment token in a file. Leading comments or whitespace are allowed; any other construct before `module` is ill-formed.
-- The `import-section` consists of zero or more `import` directives. Implementations **SHOULD** require these directives to form a contiguous block; interleaving imports with declarations **SHOULD** produce a diagnostic because it obscures dependency ordering.
-- Parsers **MAY** process files in any order and even in parallel, but diagnostic reporting **MUST** remain deterministic (e.g., file order followed by source span).
-- Local error recovery (e.g., inserting a missing brace) is encouraged so that multiple diagnostics can be reported, yet compilers **MUST** still treat the underlying error as fatal unless the user explicitly requests otherwise.
+- A **compilation unit** (Section 1.3) consists of one physical file after lexing and normalization (Section 2). Unless the manifest explicitly groups files via future mechanisms, each source file is treated as one compilation unit.
+- The grammar for a compilation unit is
+  ```
+  compilation-unit ::= module-declaration import-section? declaration-block
+  ```
+  Free-standing statements before the `module` declaration are invalid.
+- The `module` declaration **MUST** be the first non-comment token. Leading comments, shebangs, or whitespace are allowed; any other construct before `module` is ill-formed.
+- The `import-section` is a contiguous block of `import` directives. Implementations SHOULD flag imports that appear after declarations because they obscure dependency ordering.
+- Compilers MAY process units in any order or in parallel, but diagnostics MUST remain deterministic (for example, sorted by file path and source span).
 
-### 3.2 Compilation Model (Two-Pass Overview)
+### 3.2 Two-Pass Model
 
-- Conceptually the compiler performs two logical passes:
-  1. **Structural pass** — parses syntax, records modules, collects declarations, and builds symbol tables without performing name binding beyond module-level references.
-  2. **Semantic pass** — performs type checking, ownership validation, meta-token evaluation, and code generation using the immutable symbol tables from pass one.
-- Implementations **MAY** subdivide these passes internally, but observably they **MUST** behave as if all modules and declarations were discovered before semantic analysis begins. Diagnostics from later stages **MUST** cite spans produced during the structural pass.
+Implementations may structure their front end however they wish, but observably a Cloth compiler behaves as though it executes two logical passes:
+
+1. **Structural pass** — parses syntax, records module memberships, collects declarations, and builds symbol tables. No type checking or ownership analysis occurs in this pass.
+2. **Semantic pass** — performs name binding, type checking, ownership validation, meta-token evaluation, and code generation using the immutable results of the structural pass.
+
+Even if an implementation merges these passes internally, diagnostics emitted during later phases MUST cite spans discovered during the structural pass so tooling can navigate precisely.
 
 ### 3.3 Modules
 
-Modules act as the first-level namespace boundary and define which declarations are packaged together. Multiple files can contribute to a module; together they define the module’s public API.
+A module is the first-level namespace boundary. All compilation units that share the same module path are merged before semantic analysis.
 
 #### 3.3.1 Module Declarations
 
-- Syntax:<br>
-  `module-declaration ::= 'module' module-path ';'`<br>
-  `module-path ::= identifier ('.' identifier)*`
-- Every compilation unit **MUST** declare exactly one module. Files lacking a module declaration or declaring more than one are invalid.
-- Module segments obey the identifier grammar in Section 2.5. Keywords, meta keywords, and empty segments are prohibited.
-- All files that share the same module path belong to the same module and **MUST** be merged before semantic analysis. Conflicting definitions are errors unless a future “partial type” feature explicitly allows them (**OPEN ISSUE: Partial type definitions**).
+- Syntax:
+  ```
+  module-declaration ::= 'module' module-path ';'
+  module-path        ::= identifier ('.' identifier)*
+  ```
+- Each compilation unit **MUST** declare exactly one module. Files lacking a module declaration (or declaring more than one) are rejected.
+- Module segments obey the identifier grammar from Section 2.5. Keywords, meta keywords, empty segments, and non-ASCII characters are prohibited.
+- All units that declare `module cloth.net.http;` belong to the same module and are merged before semantic analysis. If two units introduce conflicting declarations, the compiler MUST emit a diagnostic citing both locations unless a future standard describes partial-type composition.
 
-#### 3.3.2 Module Naming Rules
+#### 3.3.2 Naming Conventions
 
-- Module names are case-sensitive. `example.net` and `Example.Net` are distinct modules even if they live in the same directory.
-- The directory structure **SHOULD** mirror the module hierarchy (e.g., `cloth/net/http/Main.co` contains `module cloth.net.http;`). Tooling relies on this convention to locate files deterministically.
-- Module segments **MUST** start with a letter or `_` and may include digits or `$` thereafter. Characters such as `-`, spaces, or Unicode punctuation are forbidden.
-- Sharing a prefix with another module (e.g., `cloth.out` vs. `cloth.out.io`) does not imply visibility or inheritance. Access still depends on imports and visibility modifiers.
+- Module names are case-sensitive. `example.net` and `Example.Net` refer to different modules even if they reside in the same directory.
+- Directory structure SHOULD mirror module hierarchies (e.g., `cloth/net/http/Main.co` contains `module cloth.net.http;`). Tooling relies on this convention to locate files and compute import paths.
+- Module segments MUST start with a letter or `_` and may include digits or `$`. Characters such as `-`, whitespace, or Unicode punctuation are forbidden.
+- Sharing a prefix with another module (e.g., `cloth.out` vs. `cloth.out.io`) has no semantic effect. Visibility still depends on imports and modifiers.
 
 #### 3.3.3 Reserved Namespaces
 
-- The prefixes `cloth.*`, `compiler.*`, and `std.*` are reserved for the official distribution, compiler tooling, and the standard library respectively. User code **MUST NOT** declare modules rooted at these prefixes unless explicitly authorized by project configuration.
-- Platform vendors **MAY** reserve additional prefixes (e.g., `vendor.*`). Such reservations **MUST** be documented alongside the build tooling so that conflicts can be diagnosed consistently.
-- Build systems **SHOULD** warn when user modules attempt to shadow a reserved namespace even if the build technically allows it; behavior would otherwise depend on link order.
+- The prefixes `cloth.*`, `compiler.*`, and `std.*` are reserved for the official distribution, compiler tooling, and the standard library. User code MUST NOT declare modules rooted at these prefixes unless authorized by project configuration.
+- Platform vendors MAY document additional reserved prefixes (e.g., `vendor.*`). Compilers should warn when user modules attempt to shadow these namespaces even if the build technically allows it.
 
 ### 3.4 Imports
 
-Imports establish which external symbols are visible inside the current module. They affect compile-time name lookup only; Cloth does not perform runtime module loading.
+Imports control compile-time visibility. They do not load code at runtime.
 
-#### 3.4.1 Import Resolution
+#### 3.4.1 Syntax
 
-- General syntax:<br>
-  `import-directive ::= 'import' module-path ('.' identifier)* ('::{' import-list '}')? ';'`
-- Plain imports expose the entire module namespace for qualified use (e.g., `import cloth.out;` allows `cloth.out.println`). Selective imports bring specific symbols into the local scope (`import cloth.out::{println};`).
-- Each entry in `import-list` may be renamed via `as`: `import foo::{Thing as FooThing};`. Duplicate local names **MUST** produce a diagnostic even if they come from different modules.
-- The `::` separator between the module path and brace list is mandatory for selective imports. `import cloth.out { println };` is invalid.
-- During resolution the compiler verifies that the module exists, is reachable, and exports the requested symbols with sufficient visibility. Missing modules or symbols **MUST** result in errors at this stage rather than later in semantic analysis.
+```
+import-directive ::= 'import' module-path ('.' identifier)* ('::{' import-list '}')? ';'
+import-list      ::= import-entry (',' import-entry)*
+import-entry     ::= identifier ('as' identifier)?
+```
 
-#### 3.4.2 Cyclic Dependencies
+- A plain import (`import cloth.out;`) exposes the module for qualified use (e.g., `cloth.out.println`).
+- A selective import (`import cloth.out::{println};`) brings specific symbols into scope. The `::` introducer is mandatory; omitting it is a syntax error.
+- Each selective entry MAY rename the imported symbol using `as`. After renaming, the new identifier MUST follow the identifier grammar.
+- Duplicate local names (from either multiple selective imports or name clashes with local declarations) MUST trigger an ambiguity diagnostic.
+- Imports form a contiguous block immediately after the module declaration. Declaring identifiers before imports is forbidden.
 
-- Cloth permits cyclic type dependencies. Modules `A` and `B` may declare types that refer to each other so long as the declarations can be resolved during the structural pass.
-- Owned object relationships **MUST** remain acyclic unless every participant resides in a shared lifetime region. Attempting to introduce an ownership cycle outside of a shared region is a compile-time error enforced by the ownership analysis.
-- Import directives participate in compile-time name lookup only. They do not imply runtime loading order or ownership relationships.
-- Implementations **MUST** collect and merge top-level declarations before resolving bodies so that mutually dependent modules can be analyzed consistently.
-- A module import cycle is invalid only when it prevents unambiguous resolution of declarations, initialization ordering, or other compile-time requirements. When a cycle must be rejected, the compiler **SHOULD** emit a diagnostic that identifies the path.
+#### 3.4.2 Resolution and Cycles
+
+- During import resolution the compiler verifies that the target module exists, is reachable, and exports the requested symbol with sufficient visibility. Missing modules or symbols are reported before semantic analysis continues.
+- Modules may reference each other cyclically so long as the structural pass can resolve all declarations without ambiguity. Tooling MUST collect and merge top-level declarations prior to analyzing bodies so that mutually dependent modules see each other’s definitions.
+- Ownership rules remain acyclic: even if modules refer to each other, owned object graphs must not form cycles unless the objects live in a shared lifetime domain (Section 11).
+- A module import cycle becomes illegal only when it prevents unambiguous resolution (for example, two modules each require the other’s constants during static initialization). When rejecting a cycle, implementations SHOULD emit diagnostics that list the cycle path.
 
 ### 3.5 Top-Level Declarations
 
-- Only type declarations (`class`, `struct`, `interface`, `trait`, `enum`, `type` alias) may appear at the top level. Free-standing variables, statements, or expressions outside a type declaration are ill-formed.
-- Top-level types default to `internal` visibility unless annotated otherwise. Member declarations inside a type default to `private`.
-- Attributes, doc comments, and meta invocations that annotate a type **MUST** immediately precede the type keyword with no intervening declarations or imports.
-- Exactly one top-level type declaration (class, struct, enum, interface, or trait) **MUST** appear per source file. Additional types **MUST** either be nested inside that declaration or moved to their own files to keep the file-to-type mapping deterministic for tooling.
+- Only type declarations (`class`, `struct`, `interface`, `trait`, `enum`, `type` alias) may appear at the top level. Free-standing variables, statements, or expressions outside a type declaration are invalid.
+- Top-level types default to `internal` visibility; members declared inside a type default to `private`.
+- Attributes, doc comments, and meta invocations that annotate a type MUST immediately precede the type keyword with no intervening declarations or imports.
+- Exactly one top-level type declaration MUST appear per source file. Additional types MUST be nested or moved to their own files so that tooling can map file paths to type names deterministically.
 
-### 3.6 File Structure and Organization
+### 3.6 File Organization
 
-- File layout rules apply per physical source file regardless of how the manifest assembles compilation units. Even when `[[units]]` (Section 13.5) merges non-adjacent files into the same unit, each file **MUST** satisfy the following ordering independently so that tooling can parse files without consulting the manifest.
-- Files **MUST** follow this canonical order:
-  1. Optional license or tooling comments.
-  2. `module` declaration.
-  3. Contiguous block of `import` directives (preferably sorted lexicographically).
-  4. Exactly one top-level type declaration whose definition matches the file name or documented convention.
-- Declaring multiple modules per file, placing imports after declarations, or mixing statements with the module declaration is forbidden and **MUST** be diagnosed.
-- Generated files **MUST** adhere to the same structure so that they can be compiled alongside handwritten sources without special flags.
+Even when advanced build systems aggregate files, each physical source file MUST observe the same structure so tools can parse files independently:
+
+1. Optional license or tooling comments.
+2. `module` declaration.
+3. Contiguous `import` block (preferably sorted lexicographically).
+4. Exactly one top-level type declaration whose name matches the project’s documented conventions (for example, file name equals type name).
+
+Declaring multiple modules per file, placing imports after declarations, or mixing statements with the module declaration is forbidden and MUST trigger diagnostics. Generated files are subject to the same ordering so that they can be compiled alongside handwritten sources without special flags.
 
 ## 4. Type System
 
-Cloth is statically typed and nominal. Every expression has a compile-time type, and programmers must declare the types of all storage locations unless a specific inference rule applies. This section enumerates the canonical type categories and the rules that govern conversions between them.
+Cloth’s type system is nominal, statically checked, and ownership-aware. Every expression, declaration, and intermediate value has an explicit type, and those types govern both compile-time reasoning and runtime layout.
 
-### 4.1 Overview of the Type System
+### 4.1 Overview
 
-- Types are grouped into primitives, composites, nullable forms, and user-defined declarations (classes, structs, interfaces, traits, enums). User-defined types are nominal: equality depends on the fully qualified name, not structure.
-- `any` is the universal reference type. Any reference type may implicitly upcast to `any`, but the reverse requires a cast.
-- `void` denotes the absence of a value and may appear only as the return type of functions or as the type of `Main` constructors. Variables cannot have type `void`.
-- Nullability is explicit. Non-nullable types **MUST NOT** receive `null`, and the compiler enforces checks before dereferencing nullable values.
+- Types fall into four broad categories: primitives, composites, nullable forms, and user-defined declarations (classes, structs, interfaces, traits, enums).
+- All user-defined types are nominal: equality depends on the fully qualified module path plus the type name.
+- `any` is the universal reference type. Any reference type may implicitly upcast to `any`; downcasts require explicit casts or safe casts.
+- `void` represents “no value.” It may only appear as the return type of functions or as the type of a constructor. Variables, fields, and parameters cannot have type `void`.
+- Nullability is explicit. Non-nullable types **MUST NOT** receive `null`, and compilers enforce this restriction at compile time.
 
 ### 4.2 Primitive Types
 
-Primitive types have fixed binary representations. They are always available without imports and participate directly in arithmetic and logical operations.
+Primitive types have fixed binary representations defined by the language rather than by user code.
 
-#### 4.2.1 Integer Types
+#### 4.2.1 Integers
 
 - Signed integers: `i8`, `i16`, `i32`, `i64`.
 - Unsigned integers: `u8`, `u16`, `u32`, `u64`.
-- Synonyms:
-  - `byte` = `u8`
-  - `short` = `i16`
-  - `int` = `i32`
-  - `long` = `i64`
-  - `uint` = `u32`
-  - `bit` = single-bit numeric type (logical `0` or `1`)
-- All integers use two's-complement encoding. Arithmetic that leaves the destination range is **undefined behavior** until checked-arithmetic intrinsics are standardized (**OPEN ISSUE: Checked arithmetic**).
-- Implicit conversions are limited to widening conversions (e.g., `i16` → `i32`). All other conversions require an explicit cast (Section 4.8.1).
+- Synonyms: `byte`=`u8`, `short`=`i16`, `int`=`i32`, `long`=`i64`, `uint`=`u32`, `bit` (single-bit type).
+- Representation: all integers use two’s-complement encoding. Arithmetic that overflows the target type is **undefined behavior**; future revisions may introduce checked arithmetic intrinsics, but until then overloads and user code must guard explicitly.
+- Implicit conversions are limited to widening conversions within the same signedness (e.g., `i16 → i32`). Signed-to-unsigned or narrowing conversions require explicit casts.
 
-#### 4.2.2 Floating-Point Types
+#### 4.2.2 Floating-Point Numbers
 
-- `f32` (alias `float`) follows IEEE-754 single-precision semantics.
-- `f64` (aliases `double`, `real`) follows IEEE-754 double-precision semantics.
-- Literal suffixes `f/F/d/D` select the canonical float type (Section 2.8.2). Without a suffix, literals default to `double`.
-- Only `f32` → `f64` is implicitly allowed. Downcasts require explicit casts, which may round or overflow per IEEE rules.
+- `f32` (alias `float`) implements IEEE-754 single precision.
+- `f64` (aliases `double`, `real`) implements IEEE-754 double precision.
+- Only the widening conversion `f32 → f64` is implicit. All other conversions require explicit casts because they may change precision or range.
 
-#### 4.2.3 Boolean Type
+#### 4.2.3 Boolean and Bit Types
 
-- `bool` stores the logical values `true` and `false`. It is distinct from `bit`; automatic conversion between them is prohibited.
-- Conditionals (`if`, `while`, `switch`) require `bool`. Using any other type without an explicit conversion is a compile-time error.
+- `bool` stores the logical values `true` and `false`. Conditionals (`if`, `while`, `switch`) require `bool`; no other type auto-converts to boolean.
+- `bit` is a single-bit numeric type used for bit-level APIs. Unlike `bool`, it participates in numeric operations but cannot replace `bool` in control-flow constructs.
 
-#### 4.2.4 String Type
+#### 4.2.4 string
 
-- The `string` type represents an immutable UTF-8 sequence. Length is measured in bytes; APIs expose code-point iteration for locale-aware operations.
-- String literals produce `string` instances whose storage is owned by the declaring module unless explicitly copied.
-- The standard library defines concatenation, slicing, and interning semantics; the core language guarantees only immutability and UTF-8 encoding.
+- `string` is an immutable UTF-8 sequence. Length is measured in bytes; the standard library exposes code-point iterators for locale-aware operations.
+- String literals allocate `string` instances owned by the declaring module unless explicitly copied or transferred.
 
 ### 4.3 Composite Types
 
-Composite types are derived from other types but remain first-class citizens.
+Composite types derive from other types but remain first-class citizens.
 
 #### 4.3.1 Arrays
 
 - Syntax: `T[]`.
-- Arrays are reference types that own their elements. Destroying the array destroys contained elements following the ownership tree rules described in Section 11 and the Ownership & Lifetime Model.
-- Length is fixed at construction. Access is bounds-checked unless the implementation provides a documented `unsafe` escape hatch.
+- Arrays are reference types that own their elements. Destroying the array destroys the contained elements following the ownership rules in Section 11.
+- Length is fixed at construction. Indexing is bounds-checked unless a documented `unsafe` escape hatch is used.
 
 #### 4.3.2 Tuples
 
-- Syntax: `(T0, T1, ..., Tn)` for `n ≥ 1`.
+- Syntax: `(T0, T1, …, Tn)` for `n ≥ 1`.
 - Tuples are value types. Equality and hashing are structural and consider each component in order.
-- Tuple elements are accessed via positional selectors (`value.0`) or pattern destructuring.
+- Elements are accessed via positional selectors (`value.0`) or pattern destructuring.
 
 ### 4.4 Nullable Types
 
-- `T?` denotes an optional value of type `T`. The value set is `{ null } ∪ { v | v ∈ T }`.
+- `T?` denotes an optional value of type `T`. The value set is `{null} ∪ {v | v ∈ T}`.
 - Nullable references default to `null`; nullable value types default to the zero-initialized value of `T`.
 - Converting `T?` to `T` requires an explicit null check (`??`, `if`, pattern matching). Assigning `null` to a non-nullable `T` is a compile-time error.
 
 ### 4.5 Type Modifiers
 
-Modifiers refine how a type behaves regarding concurrency, storage, or ownership. When a modifier influences ownership or lifetime semantics, its behavior **MUST** remain consistent with Section 11 and the companion Ownership & Lifetime Model.
+Modifiers refine concurrency, storage, or ownership semantics. When a modifier affects lifetime, it must remain consistent with Section 11.
 
 #### 4.5.1 `atomic`
 
-- `atomic T` guarantees that reads and writes of `T` occur atomically with respect to other threads.
-- Only types whose sizes fit the platform's native atomic widths may be marked `atomic`. Otherwise, the compiler **MUST** emit an error.
-- Atomics use sequentially consistent ordering until weaker modes are standardized (**OPEN ISSUE: Memory ordering modifiers**).
+- `atomic T` guarantees atomic reads and writes with sequentially consistent ordering.
+- Only types whose sizes fit the platform’s native atomic width may be marked `atomic`. Larger types trigger an error.
 
-#### 4.5.2 Other Modifiers
+#### 4.5.2 Ownership Modifiers
 
-- `shared` marks instances that exist in the shared lifetime domain (Section Ownership Model). Shared instances cannot own non-shared children.
-- `owned` documents that a member participates in the owner's destruction order (the default for most instance fields).
-- `const` prohibits mutation after initialization. The compiler **MUST** enforce this for both value and reference members.
-- Additional modifiers such as `static` and future concurrency tags **MUST** be specified before use. Implementations **MUST NOT** invent modifiers without specification backing.
+- `shared` places an instance in the shared lifetime domain. Shared instances cannot own non-shared children.
+- `owned` documents that a member participates in its owner’s destruction order (the default for most fields).
+- `const` prohibits mutation after initialization for both values and references.
+- `static` indicates that the declaration lives in the static lifetime domain and never participates in ownership transfers.
 
-### 4.6 Type Identity and Equality
+### 4.6 Type Identity
 
-- Primitive types are identical if they share the same canonical name (aliases map to their canonical forms).
-- User-defined types are identified by their fully qualified module path and name.
-- Array types are identical when their element types are identical. Tuple types require identical arity and component types in order.
-- Nullable types form distinct identities: `T? ≠ T` even when `T` admits `null`.
-- Type aliases do not create new identities; they simply introduce alternate spellings.
+- Primitive identities are determined by canonical names; aliases map to their canonical forms.
+- User-defined types are identified by fully qualified module path plus type name.
+- Array types are identical when their element types match exactly. Tuples require identical arity and component types in order.
+- Nullable types form distinct identities (`T? ≠ T` even if `T` admits `null`).
+- Type aliases introduce alternate spellings but do not produce new identities.
 
-### 4.7 Type Inference Rules
+### 4.7 Type Inference
 
-- `var` enables local inference: `var x = expr;` infers `x`'s type from `expr`. The initializer is mandatory.
-- Generic inference selects type arguments that satisfy all constraints at the call site. When inference fails, the program is ill-typed and the compiler **MUST** request explicit type arguments.
-- Inference is never bidirectional; usage sites do not retroactively affect declaration types.
-- Public APIs **SHOULD** spell out explicit types to maintain stability across compilation units.
+- `var` enables local inference: `var x = expr;` infers `x`’s type from `expr`. The initializer is mandatory.
+- Generic inference chooses type arguments that satisfy all constraints at the call site. If inference fails, the program is ill-typed and the compiler MUST request explicit type arguments.
+- Inference is never bidirectional; later usage does not retroactively change earlier declarations.
+- Public APIs SHOULD spell out explicit types to maintain stability across compilation units.
 
-### 4.8 Casting and Conversion
+### 4.8 Conversion Semantics
 
-Conversions move values between types. Unless stated otherwise, conversions occur at compile time; runtime checks are injected only when required for safety.
+Conversions move values between types. Unless stated otherwise, conversions occur at compile time; runtime checks are inserted only when required for safety.
 
 #### 4.8.1 Explicit Casting (`as`)
 
 - Syntax: `expr as TargetType`.
-- Used for narrowing numeric conversions, reference downcasts, and interface/class rebindings.
-- If the conversion cannot be proven safe at compile time, a runtime check occurs. Failing the check throws a `CastError` (**OPEN ISSUE: precise exception name**).
+- Used for numeric narrowing, reference downcasts, and interface/class rebindings.
+- If the conversion cannot be proven safe, a runtime check occurs. Failing the check throws a `CastError`.
 
 #### 4.8.2 Safe Casting (`as?`)
 
 - Syntax: `expr as? TargetType`.
-- Evaluation yields `TargetType?`. If `expr` is compatible with `TargetType`, the result is the converted value (non-null). Otherwise the result is `null`; the cast never throws.
-- Safe casts are typically paired with `??` to supply fallback behavior. Example:<br>
-  `const u32 value = (input as? u32) ?? throw new NegativeNumberError("Negative number");`
-- Implementations **MAY** desugar `as?` into `is` checks followed by conditional `as` operations, but the observable semantics **MUST** match the nullable result contract.
-- Because the result is nullable, subsequent use **MUST** discharge the `null` case via `??`, pattern matching, or explicit guards before treating it as non-nullable `TargetType`.
+- Returns `TargetType?`. When conversion succeeds, the result is non-null; otherwise `null` is returned without throwing.
+- Safe casts are typically paired with `??` to provide fallback behavior.
 
 #### 4.8.3 Implicit Conversions
 
-- Allowed cases:
-  - Numeric widening (`i8` → `i16`, `f32` → `f64`).
-  - Reference upcasting along inheritance or interface implementation edges.
-  - Adding nullability (`T` → `T?`).
-- Any other conversion (including nullable-to-non-nullable, signed-to-unsigned, or custom user-defined conversions) **MUST** be explicit.
+Implicit conversions are limited to:
+
+1. Numeric widening (`i8 → i16`, `f32 → f64`).
+2. Reference upcasting along inheritance or interface edges.
+3. Adding nullability (`T → T?`).
+
+All other conversions—including nullable-to-non-nullable and signed-to-unsigned—require explicit casts.
 
 ## 5. Declarations
 
-Declarations introduce names, tie them to types, and establish how values participate in Cloth’s ownership and lifetime model. This section builds on Section 3 (structure) and Section 4 (type system) while remaining anchored to the Ownership & Lifetime Model summarized in Section 11, so every rule applies uniformly regardless of declaration location.
+Declarations introduce names, tie them to types, and establish how values participate in Cloth’s ownership and lifetime model. Every rule in this section builds on the structural requirements from Section 3, the type semantics from Section 4, and the ownership rules summarized in Section 11.
 
-### 5.1 General Declaration Rules
+### 5.1 General Rules
 
-- **Explicit typing** — Every declaration **MUST** state its type (or use `var` where local inference is permitted). The compiler never infers visibility, ownership domain, or modifiers from usage.
-- **Storage domains** — Declarations belong to one of three domains:
-  1. **Static** — Prefixed with `static`; lifetime equals the entire program and bypasses the ownership tree.
-  2. **Instance** — Fields and members owned by an object; they participate in the ownership hierarchy described in the Ownership & Lifetime Model.
-  3. **Local scope** — Variables declared within a block; lifetime equals the lexical scope.
-- **Relationship markers** — `Type`, `&Type`, and `$Type` express owned, non-owning, and shared relationships respectively. Unless a marker appears, the declaration is owned by default.
-- **Visibility defaults** — Top-level declarations default to `internal`; members default to `private`. Programmers **SHOULD** spell modifiers explicitly for public APIs.
-- **Definite assignment** — A declaration is not available for use until it has been definitively assigned along all control paths. Constructors must initialize all owned fields before the instance escapes.
-- **Transfer checks** — Assigning an owned value to a new owner implicitly transfers ownership. The compiler **MUST** reject assignments that would create cycles or cause two owners to reference the same owned instance simultaneously.
+1. **Explicit typing** — Every declaration MUST state its type (or use `var` for local inference). The compiler never infers visibility, ownership domain, or modifiers from usage.
+2. **Storage domains** — Declarations belong to exactly one storage domain:
+   - **Static** — Prefixed with `static`; lifetime spans the duration of the program.
+   - **Instance** — Fields and members owned by an object; they participate in the ownership hierarchy rooted at `Main`.
+   - **Local** — Variables declared inside a block; lifetime ends when the block exits unless ownership is transferred outward.
+3. **Relationship markers** — `Type` denotes owned values, `&Type` denotes borrows, and `$Type` denotes shared handles. Unmarked declarations default to owned.
+4. **Visibility defaults** — Top-level declarations default to `internal`; members default to `private`. Public APIs SHOULD spell out visibility explicitly.
+5. **Definite assignment** — A declaration cannot be read until it has been initialized along every control path. Constructors MUST initialize all owned fields before the instance escapes.
+6. **Transfer rules** — Assigning an owned value to a new owner transfers ownership and invalidates the source slot unless the type is copyable. Compilers MUST reject transfers that would create ownership cycles or multiple owners for the same instance.
+7. **Field initializer order** — Within a type, field initializers execute in textual order and may reference only fields declared earlier in the same type. Referencing a later field is a compile-time error.
 
 ### 5.2 Variable Declarations
 
@@ -710,28 +712,32 @@ Declarations introduce names, tie them to types, and establish how values partic
 
 ### 5.4 Function Declarations
 
-- Syntax:<br>
-  `function-modifiers? func name(parameter-list) :> return-type maybe clause? body`
-- Parameter semantics:
-  - Unmarked parameter types are owned inputs; ownership transfers into the function scope. The function **MUST** either consume or return ownership before exit.
-  - `&Type` parameters borrow references; the caller retains responsibility for lifetime.
-  - `$Type` parameters share handles and follow the shared domain rules.
-- Return values:
+```
+function-modifiers? func Name(parameter-list) :> return-type maybe clause? body
+```
+
+- **Parameters**
+  - Owned parameters (`Type`) transfer ownership into the function scope. The function MUST either consume or return ownership before exit.
+  - Borrowed parameters (`&Type`) leave ownership with the caller; the callee MUST NOT store the reference beyond the call unless the type system proves the lifetime is valid.
+  - Shared parameters (`$Type`) copy a shared handle; lifetime is governed by the shared domain.
+- **Return values**
   - Returning `Type` transfers ownership to the caller.
-  - Returning `&Type` borrows from the callee’s state; the compiler **MUST** ensure the referenced object outlives the call.
-  - Returning `$Type` yields a shared handle; lifetime is governed by the shared domain.
-- Functions may declare `maybe` clauses to signal error-aware returns. All ownership guarantees still apply when a function returns via an error path.
-- `static` functions reside in the module or type scope without implicit `this`. Instance methods receive `this` as an owned (`this`) or non-owning (`&this`) receiver depending on modifiers defined in Section 9.
+  - Returning `&Type` borrows from the callee; the compiler MUST ensure the referenced object outlives the call.
+  - Returning `$Type` passes a shared handle back to the caller.
+- **Maybe clauses** — `maybe ErrorType1, ErrorType2` indicates that the function may return either the declared value or one of the listed errors. Ownership guarantees remain in force on both success and failure paths.
+- **Receivers**
+  - `static` functions reside in module/type scope and have no implicit receiver.
+  - Instance methods receive `this` as owned (`this`) or borrowed (`&this`) depending on modifiers defined in Section 9.
 
 ### 5.5 Type Declarations
 
-Type declarations define new nominal types and establish the ownership semantics for their members. This section focuses on the canonical forms listed in the table of contents; traits and aliases will be specified later.
+Type declarations define new nominal types and specify how their members participate in ownership.
 
-- **Fields** — Unmarked object fields are owned by the containing instance. Use `&Type` for non-owning references or `$Type` for shared handles.
-- **Constructors** — Must initialize all owned fields before returning. Missing initialization is a compile-time error.
-- **Destructors** — Execute after owned children are destroyed (deterministic destruction per the Ownership & Lifetime Model).
-- **Static members** — Live in the static domain and never participate in the ownership tree.
-- **Nested types** — Inherit the enclosing type’s visibility defaults but form independent ownership domains when instantiated.
+- **Fields** — Unmarked fields are owned by the containing instance. Use `&Type` for borrows and `$Type` for shared handles.
+- **Constructors** — Must initialize all owned fields before returning and may only read fields that have already been initialized (see Section 5.1).
+- **Destructors** — Execute after owned children are destroyed, ensuring deterministic cleanup.
+- **Static members** — Reside in the static domain and never participate in ownership transfers.
+- **Nested types** — Inherit the enclosing type’s default visibility but form independent ownership domains when instantiated.
 
 #### 5.5.1 Class Declarations
 
@@ -748,12 +754,12 @@ Type declarations define new nominal types and establish the ownership semantics
 
 #### 5.5.2 Struct Declarations
 
-- Syntax mirrors classes but structs are value types stored inline.
+- Syntax mirrors classes, but structs are value types allocated inline.
 - Copy semantics:
-  - Struct assignment copies every field. If a field is owned, the copy becomes a transfer (the original field is invalidated) unless the field type explicitly permits duplication (e.g., bitwise-copyable primitives). **OPEN ISSUE: Copy traits** will formalize duplicable types.
-  - Structs cannot contain `$Type` fields unless the shared handle is copyable.
-- Because structs live inline, their destructors (if any) run when the containing scope releases the struct (end of local scope, owning field destruction, etc.).
-- Structs cannot participate in inheritance but may implement interfaces/traits once specified.
+  - Assigning a struct copies each field. For owned fields, the copy invalidates the source field (a move). Only bitwise-copyable primitives and types explicitly marked as duplicable may be copied without transfer.
+  - Structs cannot contain `$Type` fields unless the shared handle’s reference semantics are copyable.
+- Structs do not participate in inheritance but may implement interfaces or traits.
+- Because structs live inline, any destructor runs when the containing scope releases the struct (end of block, owning field destruction, etc.).
 
 #### 5.5.3 Enum Declarations
 
@@ -765,59 +771,83 @@ Type declarations define new nominal types and establish the ownership semantics
 
 #### 5.5.4 Interface Declarations
 
-- Interfaces declare method signatures and property contracts without providing storage.
-- Syntax:<br>
-  `interface Name { signature* }`
-- Interfaces do not participate directly in ownership. Methods defined by an interface adopt the ownership semantics spelled out in Section 5.4 when implemented by a concrete type.
-- A class or struct may implement multiple interfaces. The compiler **MUST** verify that implementations satisfy every signature exactly once.
-- Interfaces cannot declare fields. They may declare associated types in a future revision (**OPEN ISSUE: Interface associated types**).
+- Syntax:
+  ```
+  interface Name { signature* }
+  ```
+- Interfaces declare method signatures and property contracts without providing storage. Implementations adopt the ownership semantics described in Section 5.4.
+- A class or struct may implement multiple interfaces. The compiler MUST verify that each signature is implemented exactly once.
+- Interfaces cannot declare fields or associated types in this revision.
 
 These subsections ensure each type form has clear lifetime responsibilities, enabling the compiler to enforce deterministic destruction and ownership transfer consistently across the language.
 
 ## 6. Scope and Accessibility
 
-Scope determines which declarations are visible at a given source location, while accessibility controls whether those declarations can be used outside their visibility domain. Cloth enforces lexical scoping: the textual structure of the program alone determines scope boundaries.
+Scope determines where a declaration is visible. Accessibility controls which modules may use that declaration. Cloth enforces lexical scoping: the textual structure of the program alone determines scope boundaries.
 
 ### 6.1 Scope Rules
 
-Scope boundaries in Cloth are determined purely by source structure. Every identifier belongs to exactly one scope, and scopes nest lexically. The subsections below correspond directly to the table of contents items.
-
 #### 6.1.1 Block Scope
 
-- A block scope begins at `{` and ends at the matching `}`. Each block creates a fresh symbol table for locals, labels, and nested declarations.
-- Declarations within a block are visible from their declaration point to the end of the block. Forward references to later declarations in the same block are not allowed unless the construct explicitly supports hoisting (e.g., function prototypes when introduced).
-- Control-flow statements (`if`, `for`, `while`, `switch`, `match`, `catch`, `finally`) implicitly form blocks. Conditions for these constructs **MUST** be parenthesized (`if (condition)`, `while (condition)`, `for (...; condition; ...)`). Braces are required in formal documentation examples and **SHOULD** be enforced by tooling to avoid ambiguity, even for single-statement bodies.
-- Lifetime behavior:
-  - Owned locals (`Type name;`) are destroyed when the block exits unless ownership is moved out of the block.
-  - Reference locals (`&Type`) become invalid the moment the referenced object leaves scope; the compiler **MUST** diagnose potential dangling references.
-  - Shared locals (`$Type`) release their handle according to the shared-domain rules when the block terminates.
-- Variables declared in initialization clauses (`for (var i = 0; ...)`) belong to the loop’s block scope and are invisible outside the loop body.
+- Every block `{ ... }` creates a fresh symbol table for locals, labels, and nested declarations.
+- Declarations are visible from their declaration point to the end of the block; forward references to later declarations in the same block are disallowed unless the language explicitly supports hoisting.
+- Control-flow statements (`if`, `for`, `while`, `switch`, `match`, `catch`, `finally`) implicitly form blocks. Conditions MUST be parenthesized. Tooling SHOULD enforce braces even for single-statement bodies to avoid ambiguity.
+- Lifetime:
+  - Owned locals are destroyed when the block exits unless ownership is moved out of the block.
+  - Borrowed locals become invalid the moment the referenced object leaves scope; compilers must diagnose potential dangling references.
+  - Shared locals release their handle when the block terminates following shared-domain rules.
+- Variables declared in loop initialization clauses belong to the loop’s block scope.
 
 #### 6.1.2 Function Scope
 
-- Function scope encompasses:
-  1. The parameter list (including default argument expressions).
-  2. The function body.
-  3. Any nested declarations (local functions, lambdas, local classes) introduced inside the function.
-- Parameters are in scope throughout the entire body, regardless of their textual position. Default argument expressions evaluate in the caller’s context but may only reference earlier parameters.
-- Instance methods implicitly introduce `this` (owned or borrowed depending on modifiers) into function scope. Static methods do not have implicit `this`.
-- Captures:
-  - Lambdas or local functions may capture variables from enclosing scopes. Capturing an owned variable transfers or borrows ownership based on the capture syntax (**OPEN ISSUE: Capture modes**). Regardless, the compiler **MUST** ensure the capture cannot outlive the owned value’s scope.
-- Return statements may reference any identifier in function scope subject to lifetime rules. Returning `&Type` requires proof that the referenced object outlives the caller.
-- Exception handlers (`catch`, `defer`, `finally`) nest inside function scope but may introduce their own block scopes per Section 6.1.1.
+- Function scope encompasses parameters, the function body, and any nested local declarations.
+- Parameters remain in scope throughout the body. Default arguments evaluate in the caller’s context but may reference only earlier parameters.
+- Instance methods implicitly introduce `this` (owned or borrowed depending on modifiers); static methods do not.
+- Captures follow the rules from Section 5: capturing an owned value moves ownership into the lambda/local function unless the capture explicitly borrows (`&capture`); reference captures borrow; shared captures duplicate the handle. Compilers MUST reject captures that would outlive the captured value.
+- Return statements may reference any identifier in function scope subject to lifetime constraints.
+- Exception handlers nest inside function scope but may create their own block scopes.
 
 #### 6.1.3 Type Scope
 
-- Each type (class, struct, interface, enum, trait when defined) defines a member scope that includes:
-  - Fields, properties, and constants.
-  - Methods, constructors, destructors.
-  - Nested types and aliases.
-- Members declared inside a type are visible throughout the type body unless a specific rule restricts forward references (e.g., field initializers referencing later fields is an **OPEN ISSUE: Field initializer order**).
-- Nested types inherit access to the enclosing type’s `private` members but remain separate nominal types with their own scopes.
-- Type scope is sealed: members do not automatically leak into the enclosing module or into instances. Access requires qualification (`instance.member` or `Type.member` for static members).
-- Partial declarations (future feature) **MUST** merge their member scopes as if they were authored in a single block, while respecting visibility and shadowing rules.
+- Each type defines a member scope covering fields, properties, constants, methods, constructors, destructors, and nested types.
+- Members are visible throughout the type body. Field initializers may reference only fields declared earlier in the same type.
+- Nested types inherit access to the enclosing type’s `private` members but remain separate nominal types.
+- Type scope is sealed: members never leak automatically into the enclosing module or instances. Access requires qualification (`instance.member` or `Type.member`).
 
-These scope definitions ensure every identifier’s lifetime and visibility are determined unambiguously by the program’s lexical layout.
+### 6.2 Name Resolution
+
+Name resolution searches scopes from innermost to outermost:
+
+1. Current block.
+2. Enclosing blocks up to the function scope.
+3. Function parameters and implicit `this`.
+4. Type members.
+5. Module-level declarations in the same compilation unit.
+6. Imported symbols (selective imports first, then fully qualified modules).
+7. Global built-ins (primitive types, meta keywords).
+
+- Qualified names bypass lexical lookup for their leading component (e.g., `module.symbol`).
+- Ambiguities (e.g., two imports providing the same name) MUST produce a diagnostic that requires explicit qualification.
+
+### 6.3 Shadowing Rules
+
+- Local variables may shadow names from outer blocks, but they MUST NOT shadow members in the same storage domain when it would create ownership ambiguity (e.g., a local variable shadowing a field inside the same method).
+- Parameters may not shadow fields of the containing type. Use `this.field` instead of redeclaring the name.
+- Type names cannot be redeclared within the same module.
+- Imports cannot shadow local declarations; conflicting imports must be aliased via `as`.
+
+### 6.4 Visibility Modifiers
+
+- **public** — accessible from any module.
+- **internal** — accessible only within the declaring module (all compilation units sharing the same `module` declaration). This is the default for top-level declarations.
+- **private** — accessible only within the declaring type or block. This is the default for members declared inside a type.
+
+Rules:
+
+1. A declaration cannot increase visibility relative to its container.
+2. Visibility is orthogonal to scope; a `public` member still requires qualification and obeys the scope rules above.
+3. Attributes defined by this specification may refine visibility; implementations MUST NOT invent new modifiers without standardization.
+4. When partial declarations (future feature) exist, overlapping members MUST agree on visibility.
 
 ### 6.2 Name Resolution
 
@@ -1457,7 +1487,7 @@ The execution model translates the static semantics from Sections 3-11 into obse
 
 Implementations MUST determine the entrypoint class before code generation completes.
 
-1. The build manifest (Section 13) or command-line options may declare a fully qualified entrypoint type via `target.main`. When provided, that value takes precedence.
+1. The build manifest (Section 13) or command-line options may declare a fully qualified entrypoint type via `project.entry`. When a specific build target is selected, that target’s `entry` field (see Section 13.6) overrides `project.entry`. If either source specifies an entrypoint, that value takes precedence over heuristic discovery.
 2. If no explicit entrypoint is supplied, implementations MUST look for a type named `Main` in the root module of the build target. Exactly one matching declaration MUST exist; zero or multiple matches are compile-time errors.
 3. The resolved entrypoint MUST be a top-level `public class`, non-generic, non-abstract, and visible under the rules in Section 6.4.
 4. The entrypoint type MUST satisfy the constructor rules in Section 12.3. If no valid constructor exists, entrypoint resolution fails with a diagnostic.
@@ -1505,60 +1535,92 @@ This section defines the manifest contracts required to produce conforming Cloth
 
 - `build.toml` MUST live at the root of the workspace passed to the compiler or build driver. Relative paths inside the manifest are resolved against this directory.
 - The manifest is encoded in UTF-8 without a byte-order mark and uses standard TOML 1.0 syntax. Parsers MUST reject malformed manifests before attempting to compile source files.
-- Unknown tables or keys MAY be ignored, but implementations MUST preserve the semantics of all standardized keys described in Sections 13.2-13.5.
+- Unknown tables or keys MAY be ignored, but implementations MUST preserve the semantics of all standardized keys described in Sections 13.2-13.6.
 - When multiple manifests are present (for example, workspaces with nested packages), the explicit manifest path chosen via CLI overrides automatic discovery. If no file is found, the build MUST fail.
 
-### 13.2 Project Configuration
+### 13.2 Required Sections
 
-The `[project]` table captures identity and primary build parameters.
+Every conforming manifest MUST provide `[project]` and `[build]`. All other sections are optional.
 
-- `name` (required) provides the canonical identifier for diagnostics and produced artifacts. It MUST be a valid identifier per Section 2.5 but may include dots for organizational purposes (e.g., `cloth.examples.hello`).
-- `version` (optional) follows semantic versioning. Implementations MAY embed this string into metadata but MUST NOT alter compilation semantics based on its value.
-- `edition` (optional) selects the language revision. If omitted, the compiler defaults to `latest`. Editions MUST be forward-compatible opt-ins; an edition may tighten warnings but MUST NOT silently change meaning of existing syntax.
-- `module-root` (optional) points to the directory containing source modules. Defaults to `src`. All relative imports in Section 3 resolve from this root.
-- `output-kind` declares the produced artifact (`binary`, `library`, `staticlib`). Unsupported kinds trigger diagnostics.
-- `profile` selects optimization and diagnostics defaults (`debug`, `release`). Profiles tweak compiler flags but MUST NOT bypass semantic checks.
+#### 13.2.1 `[project]`
 
-Entrypoint information lives under `[target]`.
+The `[project]` table defines the package identity and default entry target.
 
-- `main` is a fully qualified type name (`module.path.Class`). It directly feeds Section 12.1. If omitted, the compiler searches for `Main` in the root module.
-- `triple` (optional) expresses the compilation target (CPU-vendor-OS-ABI). When missing, the host triple is used.
-- `link` (optional) specifies the desired linker backend (`system`, `lld`, `custom`). Unsupported values cause an error.
+- `name` (required) is a non-empty string used in diagnostics, dependency graphs, and cache directories. It MUST obey the identifier grammar from Section 2.5 (dots are permitted to express namespaces).
+- `version` (required) is a non-empty semantic-version string. Changing `version` MUST NOT silently alter compilation semantics beyond what is implied by a new release.
+- `entry` (required) is a fully qualified `module.path.Type` identifying the entrypoint consumed by Section 12. No other field may contradict this value.
 
-### 13.3 Module Resolution
+Optional metadata fields include `edition`, `authors`, `description`, `license`, `repository`, and `homepage`. These keys are informative only and MUST NOT influence semantics. Projects MAY also set `module_root`; when omitted, it inherits from `build.source_dir`.
 
-Module resolution combines manifest data with the lexical rules from Section 3.
+Implementations MUST reject manifests that attempt to describe the entrypoint through any mechanism other than `[project].entry` (for example, a file-based `main_file` requirement).
 
-- `[paths]` MAY include `source`, `tests`, and `include` arrays. Each entry is either absolute or relative to the workspace root. The compiler traverses these paths in textual order when locating modules.
-- `[modules]` is optional and exists solely to override automatic discovery when the layout deviates from the canonical directory structure. Implementations **MUST** auto-discover modules by scanning the directories provided in `[paths]`; listing modules explicitly is never required for well-structured projects.
-- `allow-implicit-modules` (boolean, defaults to `true`) controls whether the compiler may synthesize modules from directory structure alone. Only set this flag to `false` when a project intentionally wants to whitelist modules via `[modules]`. When `false`, every compiled module MUST be listed explicitly; when `true`, explicit listings are treated as overrides layered on top of automatic discovery.
-- Manifest-defined search paths MUST NOT permit files outside the workspace root unless the user explicitly opts in via an allowlist. This prevents accidental inclusion of unchecked system directories.
-- When two modules resolve to the same logical name, the build MUST fail rather than pick one arbitrarily.
+#### 13.2.2 `[build]`
 
-### 13.4 Dependency Management
+The `[build]` table specifies source layout and compiler behavior. Paths are relative to the manifest unless absolute.
 
-Dependencies are declared in the `[dependencies]` table.
+- `source_dir` (required) points to the directory scanned for modules. Implementations **MUST** auto-discover modules within this tree; manual file enumeration is never required.
+- `output_dir` (required) is the directory where build artifacts and intermediate results are written.
 
-- Each key is a dependency name; the value is a table supporting at least `version`, `path`, and `git` attributes. Exactly one source attribute MAY be present. For example:
-  ```
-  [dependencies.renderer]
-  version = "1.2.3"
-  git = "https://example.com/renderer.git"
-  ```
-- Version requirements follow semantic version ranges. Implementations MUST resolve every dependency to a single version per build graph unless a dependency is explicitly marked `side = "tool"` (tooling-only).
-- Path dependencies MUST be workspace-relative unless the manifest sets `allow-outside-workspace = true` inside the dependency table. Even when allowed, the path MUST resolve to an existing manifest that abides by the same rules.
+Optional fields include `profile`, `target`, `emit`, `artifact_dir`, `cache_dir`, and `warnings_as_errors`. When omitted, implementations MAY supply sensible defaults (e.g., `profile = "debug"`, `target = "native"`, `emit = ["binary"]`). The `main_file` key MAY appear for tooling assistance but MUST remain optional and MUST NOT participate in entrypoint selection.
+
+Manifest-defined search paths MUST NOT escape the workspace root unless the user opts in via tooling flags. When two files resolve to the same module name inside `source_dir`, the build MUST fail rather than pick one arbitrarily.
+
+### 13.3 Optional Sections
+
+Sections beyond `[project]` and `[build]` MAY be omitted. When absent, implementations continue with conservative defaults.
+
+#### 13.3.1 `[dependencies]`
+
+Dependencies are optional. Manifests with no external dependencies SHOULD omit this section entirely.
+
+- Each entry MUST be written as an inline table (`name = { ... }`). Shorthand string forms (`name = "1.2.3"`) are invalid because they provide no room for future metadata.
+- Exactly one source attribute is permitted per dependency:
+  - `version` selects a registry release and follows semantic version ranges.
+  - `path` points to a workspace-relative directory containing another `build.toml`. Paths outside the workspace REQUIRE an additional opt-in flag (implementation-defined).
+  - `git` specifies a remote repository; implementations MAY accept optional `rev`, `tag`, or `branch` keys alongside `git`.
+- Optional attributes:
+  - `features` (array of strings) enables dependency features when supported.
+  - `optional` (boolean) marks the dependency as feature-gated; tooling MUST NOT treat optional dependencies as linked unless a feature activates them.
+  - `side = "tool"` marks tooling-only dependencies that do not participate in the runtime module graph.
+- Version requirements follow semantic version ranges. Implementations MUST resolve every dependency to exactly one version per build, unless `side = "tool"` explicitly permits separate tool graphs.
+- Path dependencies MUST resolve to existing manifests and inherit the same validation rules as the root project.
 - Dependency resolution MUST be deterministic. When multiple versions satisfy the constraints, the compiler chooses the highest compatible version unless a lock file (`build.lock`) pins a specific revision. Lock files are advisory but SHOULD be honored when present.
-- Circular dependencies between packages are disallowed unless the cycle solely involves tool dependencies. Implementations detect and report these cycles before compiling code.
+- Circular dependencies between packages are disallowed unless every edge in the cycle is marked `side = "tool"`. Implementations detect and report other cycles before compiling code.
 
-### 13.5 Compilation Units
+#### 13.3.2 `[profiles.<name>]`
 
-The manifest also informs how source files collapse into compilation units.
+Profiles customize optimization pipelines and debug features without forcing users to duplicate manifests. Each `[profiles.<name>]` table MAY override any subset of `[build]` keys. Conforming implementations MUST support at least `debug` and `release`.
 
-- `[[units]]` tables are optional. They exist for advanced build setups that need to pin an exact set of source globs to a named unit—for example, mixing generated sources with handwritten ones, isolating large subsystems for incremental caching, or compiling the same module tree multiple times with different feature sets. Well-structured projects **SHOULD** omit `[[units]]` entirely and rely on automatic module discovery plus the default single-unit build.
-- When a `[[units]]` table is present, each entry MUST provide a `name`, `sources` (glob or array), and optional `features`. Sources listed in a unit augment (not replace) the files discovered through `[paths]`. If a file matches both auto-discovery and a unit entry, the unit assignment takes precedence for scheduling purposes.
-- Units allow parallel compilation and fine-grained incremental builds. Implementations MUST ensure that cross-unit visibility still respects Section 6.4. Exports from one unit become available to another only after the exporting unit succeeds.
-- Features referenced in `[[units]]` MUST be declared in `[features]`. Features gate optional code and may turn on dependency subsets. Missing feature declarations are errors.
-- The build driver MUST produce deterministic outputs for a given manifest, target triple, and source tree. Incremental caching is permissible but MUST NOT change semantics when caches are cold versus warm.
-- Diagnostic output should map errors back to the original source file, even when the file participates in aggregated units. This requirement ensures tooling interoperability promised in Section 1.1.
+- Common fields include `optimization` (`"none"`, `"standard"`, `"aggressive"`), `debug_symbols` (boolean), `strip` (boolean), `incremental` (boolean), and `overflow_checks` (boolean).
+- Unspecified keys inherit the value from `[build]`. For example, if `[build]` sets `warnings_as_errors = false` and `[profiles.release]` omits it, release builds remain warning-tolerant.
+- When a profile introduces an unrecognized key, the compiler MUST emit a diagnostic rather than silently ignoring it.
+- Toolchains MAY expose CLI switches (e.g., `--profile release`) to select the active profile. The value recorded in `build.profile` remains the default when no CLI override is provided.
 
-Future manifest capabilities (custom build steps, generated sources, per-platform overrides) remain **OPEN ISSUE** items. Until standardized, implementations MUST treat such extensions as tool-specific and SHOULD emit warnings when they risk portability.
+#### 13.3.3 `[targets.<name>]`
+
+Targets describe the concrete artifacts a project can emit. Each `[targets.<name>]` table refines or augments the base configuration.
+
+- `kind` classifies the artifact (`"executable"`, `"library"`, `"test"`, `"docs"`, etc.). Unsupported kinds MUST result in diagnostics.
+- `entry` overrides `project.entry` for the selected target. Executable targets MUST provide either this field or rely on the project-level entry.
+- `source_dir`, `output_dir`, and `emit` entries MAY override the corresponding `[build]` values for that target only. This enables doc/test targets to compile from alternate trees without rewriting the base configuration.
+- `dependencies` (optional nested table) can declare target-specific dependencies (e.g., test-only libraries). When present, the compiler MUST merge these dependencies with the root `[dependencies]` before resolution.
+- Implementations SHOULD provide a default executable target derived from `[project].entry` when no `[targets.*]` tables exist. When multiple targets are declared, build tooling MUST require the caller to specify which target to build.
+
+Advanced build partitioning mechanisms such as `[[units]]` remain an **OPEN ISSUE: Explicit compilation units**. Until standardized, toolchains MUST rely on automatic module discovery informed by `[build]` and `[targets.*]`.
+
+### 13.4 Minimal Valid Manifest
+
+A manifest containing only the two required sections remains conforming:
+
+```
+[project]
+name = "notebook"
+version = "0.1.0"
+entry = "app.main.Main"
+
+[build]
+source_dir = "src"
+output_dir = "build"
+```
+
+Declaring multiple entry sources (e.g., providing both `[project].entry` and a contradictory `main_file`) is invalid and MUST trigger a diagnostic referencing the conflicting fields.
