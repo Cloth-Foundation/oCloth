@@ -2,8 +2,8 @@ module app.demo;
 
 import std.io::{println};
 
-public class Notebook(String title, $SharedCounter counter) {
-    private const String name { public get; };
+public class Notebook(string title, $SharedCounter counter) {
+    private const string name { public get; };
     private $SharedCounter sharedCount { public get; };
     private Note? first { public get; private set; };
     private Note? second { public get; private set; };

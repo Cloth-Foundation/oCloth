@@ -25,7 +25,7 @@
       3. Byte Literals
       4. Bit Literals
       5. Character Literals
-      6. String Literals
+      6. string Literals
       7. Boolean, Null, and Special Literals
       8. Future Literal Forms
 3. Program Structure
@@ -441,12 +441,11 @@ Any character not listed above and not part of another token category is illegal
 - Supported escapes mirror string literals: `\\n`, `\\r`, `\\t`, `\\\"`, `\\\\`, and `\\'`. Implementations **MAY** additionally recognize hexadecimal escapes (`\\xNN`) or Unicode escapes (`\\u{XXXX}`); expanded coverage is **OPEN ISSUE: Unicode Escape Coverage**.
 - The literal’s canonical type is `char`. It promotes to `int`, `byte`, or `u32` via zero-extension of the scalar’s code point.
 - Unescaped control characters prohibited by Section 2.1.3, stray surrogate halves, and multi-code-point grapheme clusters **MUST** be rejected.
+#### 2.8.6 string Literals
 
-#### 2.8.6 String Literals
-
-- String literals are enclosed in double quotes (`"`). The closing quote **MUST** appear on the same logical line unless explicitly escaped; encountering a newline before the closing quote is currently diagnosed as `unterminated string literal`. Multiline string syntax is **OPEN ISSUE: Multiline Strings**.
+- string literals are enclosed in double quotes (`"`). The closing quote **MUST** appear on the same logical line unless explicitly escaped; encountering a newline before the closing quote is currently diagnosed as `unterminated string literal`. Multiline string syntax is **OPEN ISSUE: Multiline string literals**.
 - Backslash escapes supported today are `\n`, `\r`, `\t`, `\"`, and `\\`. Any other character following `\` results in that character being inserted literally; the reference implementation does not yet reject unknown escapes, but the specification treats them as reserved and **recommends** emitting diagnostics so that future escape sequences can be added without changing runtime meaning.
-- Strings may contain arbitrary Unicode scalar values except unescaped control characters forbidden by Section 2.1.3. Implementations **MUST** track the original span so that diagnostics within strings (e.g., invalid escape) can pinpoint the problematic character.
+- string literals may contain arbitrary Unicode scalar values except unescaped control characters forbidden by Section 2.1.3. Implementations **MUST** track the original span so that diagnostics within strings (e.g., invalid escape) can pinpoint the problematic character.
 
 #### 2.8.7 Boolean, Null, and Special Literals
 
@@ -586,8 +585,8 @@ Primitive types have fixed binary representations. They are always available wit
 
 #### 4.2.4 String Type
 
-- `String` represents an immutable UTF-8 sequence. Length is measured in bytes; APIs expose code-point iteration for locale-aware operations.
-- String literals produce `String` instances whose storage is owned by the declaring module unless explicitly copied.
+- The `string` type represents an immutable UTF-8 sequence. Length is measured in bytes; APIs expose code-point iteration for locale-aware operations.
+- String literals produce `string` instances whose storage is owned by the declaring module unless explicitly copied.
 - The standard library defines concatenation, slicing, and interning semantics; the core language guarantees only immutability and UTF-8 encoding.
 
 ### 4.3 Composite Types
@@ -1480,7 +1479,7 @@ The selected entrypoint class is referred to as `Main` for the remainder of this
 The runtime instantiates `Main` by invoking its designated entry constructor.
 
 - There MUST be exactly one accessible constructor whose parameter list matches what the runtime can supply. Today the runtime only guarantees a zero-argument constructor; additional parameters require explicit future standardization.
-- Primary parameters on the class declaration MAY be used to capture environment values. The only standardized primary parameter is `String[] args`, which receives the process command-line exactly once before any constructor body executes.
+- Primary parameters on the class declaration MAY be used to capture environment values. The only standardized primary parameter is `string[] args`, which receives the process command-line exactly once before any constructor body executes.
 - Additional constructors may exist, but the runtime never invokes them automatically. Programs requiring alternative initialization paths MUST delegate from the entry constructor.
 - The entry constructor MAY declare a `maybe` clause (Section 10.3). If it throws or propagates an error, the process MUST terminate with a non-zero exit status after owned resources are destroyed.
 - The entry constructor MUST be `public` or otherwise accessible to the build target; private or internal constructors cannot be selected as the entrypoint.
@@ -1492,7 +1491,7 @@ Cloth runtimes MUST follow the initialization order below. Each phase completes 
 1. **Module validation** - Resolve modules, imports, and cyclic dependencies as described in Section 3. All syntax and semantic checks complete in this phase.
 2. **Static initialization** - Evaluate `static` fields, constants, and module-level initializers respecting the ordering guarantees from Section 9.8. Side effects that escape this phase are observable only through the static domain.
 3. **Entrypoint binding** - Apply Section 12.1 to select the `Main` type and verify constructor availability.
-4. **Root construction** - Allocate the `Main` instance, supply standardized primary parameters (e.g., `String[] args`), run base constructors, field initializers, and finally the entry constructor body. Execution of user code begins at the first statement of this body.
+4. **Root construction** - Allocate the `Main` instance, supply standardized primary parameters (e.g., `string[] args`), run base constructors, field initializers, and finally the entry constructor body. Execution of user code begins at the first statement of this body.
 5. **Steady state** - Program behavior is entirely user-defined. Long-running services typically block inside the `Main` constructor or delegate to dedicated event loops or threads.
 6. **Shutdown** - When the entry constructor returns or an uncaught `maybe` error escapes, the runtime triggers deterministic destruction: owned children tear down depth-first, then the `Main` destructor (if declared) runs. The process exits with status `0` on success or an implementation-defined non-zero value on failure.
 
@@ -1555,7 +1554,8 @@ Dependencies are declared in the `[dependencies]` table.
 
 The manifest also informs how source files collapse into compilation units.
 
-- `[[units]]` tables MAY define explicit units. Each entry lists `name`, `sources` (glob or array), and optional `features`. When no units are declared, the compiler treats every module under `module-root` as part of a single default unit.
+- `[[units]]` tables are optional. They exist for advanced build setups that need to pin an exact set of source globs to a named unit—for example, mixing generated sources with handwritten ones, isolating large subsystems for incremental caching, or compiling the same module tree multiple times with different feature sets. Well-structured projects **SHOULD** omit `[[units]]` entirely and rely on automatic module discovery plus the default single-unit build.
+- When a `[[units]]` table is present, each entry MUST provide a `name`, `sources` (glob or array), and optional `features`. Sources listed in a unit augment (not replace) the files discovered through `[paths]`. If a file matches both auto-discovery and a unit entry, the unit assignment takes precedence for scheduling purposes.
 - Units allow parallel compilation and fine-grained incremental builds. Implementations MUST ensure that cross-unit visibility still respects Section 6.4. Exports from one unit become available to another only after the exporting unit succeeds.
 - Features referenced in `[[units]]` MUST be declared in `[features]`. Features gate optional code and may turn on dependency subsets. Missing feature declarations are errors.
 - The build driver MUST produce deterministic outputs for a given manifest, target triple, and source tree. Incremental caching is permissible but MUST NOT change semantics when caches are cold versus warm.

@@ -2,7 +2,7 @@ module app.demo;
 
 import std.io::{println};
 
-public class Main(String[] args) maybe ParseError, NotebookFullError {
+public class Main(string[] args) maybe ParseError, NotebookFullError {
     private const $SharedCounter counter { public get; };
     private Notebook primary { public get; };
     private Notebook archive { public get; private set; };

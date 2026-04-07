@@ -1,7 +1,7 @@
 module app.demo;
 
-public class ParseError(String message) {
-    private const String value { public get; };
+public class ParseError(string message) {
+    private const string value { public get; };
 
     public ParseError {
         this.value = message;

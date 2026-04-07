@@ -1,0 +1,37 @@
+module app.factorydemo;
+
+import std.io::{println};
+
+public class Welder(string id, i32 powerRating, i32 heatLevel) :> Machine(id, powerRating), Serviceable {
+    private i32 heat { public get; private set; };
+
+    public Welder : base(id, powerRating) {
+        this.heat = heatLevel;
+    }
+
+    public override func kind() :> string {
+        return "Welder";
+    }
+
+    public override func describe() :> void {
+        super.describe();
+        println("  heat level: " + getHeat());
+    }
+
+    public func weld(string material) :> void {
+        println(getDisplayName() + " welded " + material + " at heat " + getHeat());
+    }
+
+    public override func service() :> void {
+        this.heat = 40;
+        println("Servicing " + getDisplayName() + ": nozzle replaced, heat reset");
+    }
+
+    public override func printServiceState() :> void {
+        println(getDisplayName() + " service state: heat=" + getHeat());
+    }
+
+    public ~Welder {
+        println("Destroying Welder(" + getDisplayName() + ")");
+    }
+}

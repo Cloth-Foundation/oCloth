@@ -1,0 +1,23 @@
+module app.factorydemo;
+
+public class MachineFactory() {
+    public static func createAssembler(string id, string recipe) :> Machine {
+        return new Assembler(id, 900, recipe);
+    }
+
+    public static func createWelder(string id, i32 heatLevel) :> Machine {
+        return new Welder(id, 1400, heatLevel);
+    }
+
+    public static func create(string kind, string id) :> Machine maybe UnknownMachineError {
+        if (kind == "assembler") {
+            return createAssembler(id, "general");
+        }
+
+        if (kind == "welder") {
+            return createWelder(id, 60);
+        }
+
+        throw new UnknownMachineError("Unknown machine kind: " + kind);
+    }
+}

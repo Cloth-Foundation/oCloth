@@ -1,0 +1,39 @@
+module app.factorydemo;
+
+import std.io::{println};
+
+public abstract class Machine(string id, i32 powerRating) : Named {
+    private const string machineId { public get; };
+    private const i32 watts { public get; };
+    private bool online { public get; private set; };
+
+    public Machine {
+        this.machineId = id;
+        this.watts = powerRating;
+        this.online = false;
+    }
+
+    public prototype func kind() :> string;
+
+    public override func getDisplayName() :> String {
+        return kind() + "#" + getMachineId();
+    }
+
+    public func start() :> void {
+        this.online = true;
+        println(getDisplayName() + " started");
+    }
+
+    public func stop() :> void {
+        this.online = false;
+        println(getDisplayName() + " stopped");
+    }
+
+    public func describe() :> void {
+        println(getDisplayName() + " -> " + getWatts() + "W");
+    }
+
+    public ~Machine {
+        println("Destroying Machine base for " + getDisplayName());
+    }
+}

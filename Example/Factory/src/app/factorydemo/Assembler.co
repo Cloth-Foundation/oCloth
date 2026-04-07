@@ -1,0 +1,40 @@
+module app.factorydemo;
+
+import std.io::{println};
+
+public class Assembler(string id, i32 powerRating, string recipe) :> Machine(id, powerRating), Serviceable {
+    private const string currentRecipe { public get; };
+    private i32 completedJobs { public get; private set; };
+
+    public Assembler : base(id, powerRating) {
+        this.currentRecipe = recipe;
+        this.completedJobs = 0;
+    }
+
+    public override func kind() :> string {
+        return "Assembler";
+    }
+
+    public override func describe() :> void {
+        super.describe();
+        println("  recipe: " + getCurrentRecipe());
+        println("  completed jobs: " + getCompletedJobs());
+    }
+
+    public func runBatch(i32 count) :> void {
+        this.completedJobs += count;
+        println(getDisplayName() + " completed batch of " + count);
+    }
+
+    public override func service() :> void {
+        println("Servicing " + getDisplayName() + ": belts aligned, sensors cleaned");
+    }
+
+    public override func printServiceState() :> void {
+        println(getDisplayName() + " service state: stable");
+    }
+
+    public ~Assembler {
+        println("Destroying Assembler(" + getDisplayName() + ")");
+    }
+}

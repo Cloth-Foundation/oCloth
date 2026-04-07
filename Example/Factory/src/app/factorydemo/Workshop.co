@@ -1,0 +1,119 @@
+module app.factorydemo;
+
+import std.io::{println};
+
+public class Workshop(string name) {
+    private const string workshopName { public get; };
+    private Machine? first { public get; private set; };
+    private Machine? second { public get; private set; };
+    private Machine? third { public get; private set; };
+
+    public Workshop {
+        this.workshopName = name;
+        this.first = null;
+        this.second = null;
+        this.third = null;
+    }
+
+    public func add(Machine machine) :> void maybe WorkshopFullError {
+        if (getFirst() == null) {
+            this.first = machine;
+            return;
+        }
+
+        if (getSecond() == null) {
+            this.second = machine;
+            return;
+        }
+
+        if (getThird() == null) {
+            this.third = machine;
+            return;
+        }
+
+        throw new WorkshopFullError("Workshop is full: " + getWorkshopName());
+    }
+
+    public func printRoster() :> void {
+        println("Workshop: " + getWorkshopName());
+
+        if (getFirst() != null) {
+            getFirst().describe();
+        }
+
+        if (getSecond() != null) {
+            getSecond().describe();
+        }
+
+        if (getThird() != null) {
+            getThird().describe();
+        }
+    }
+
+    public func startupAll() :> void {
+        if (getFirst() != null) {
+            getFirst().start();
+        }
+
+        if (getSecond() != null) {
+            getSecond().start();
+        }
+
+        if (getThird() != null) {
+            getThird().start();
+        }
+    }
+
+    public func serviceAll() :> void {
+        serviceMachine(getFirst());
+        serviceMachine(getSecond());
+        serviceMachine(getThird());
+    }
+
+    private func serviceMachine(Machine? machine) :> void {
+        if (machine == null) {
+            return;
+        }
+
+        Serviceable? serviceable = machine as? Serviceable;
+
+        if (serviceable != null) {
+            serviceable.service();
+            serviceable.printServiceState();
+        }
+    }
+
+    public func demoSpecializedCalls() :> void {
+        runAssembler(getFirst());
+        runWelder(getSecond());
+        runWelder(getThird());
+    }
+
+    private func runAssembler(Machine? machine) :> void {
+        if (machine == null) {
+            return;
+        }
+
+        Assembler? assembler = machine as? Assembler;
+
+        if (assembler != null) {
+            assembler.runBatch(5);
+        }
+    }
+
+    private func runWelder(Machine? machine) :> void {
+        if (machine == null) {
+            return;
+        }
+
+        Welder? welder = machine as? Welder;
+
+        if (welder != null) {
+            welder.weld("steel frame");
+        }
+    }
+
+    public ~Workshop {
+        println("Destroying Workshop(" + getWorkshopName() + ")");
+    }
+}

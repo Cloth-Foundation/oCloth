@@ -1,0 +1,6 @@
+module app.factorydemo;
+
+public interface Serviceable {
+    public func service() :> void;
+    public func printServiceState() :> void;
+}

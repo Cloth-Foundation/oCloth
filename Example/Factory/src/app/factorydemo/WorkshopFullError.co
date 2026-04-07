@@ -1,0 +1,9 @@
+module app.factorydemo;
+
+public class WorkshopFullError(string message) {
+    private const string value { public get; };
+
+    public WorkshopFullError {
+        this.value = message;
+    }
+}

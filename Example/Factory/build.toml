@@ -1,0 +1,49 @@
+[project]
+name = "app.factorydemo"
+version = "0.1.0"
+edition = "latest"
+module-root = "src"
+output-kind = "binary"
+profile = "debug"
+
+[target]
+main = "app.factorydemo.Main"
+triple = "host"
+link = "system"
+
+[paths]
+source = ["src"]
+
+[modules]
+"app.factorydemo.Main" = "src/app/factorydemo/Main.co"
+"app.factorydemo.Named" = "src/app/factorydemo/Named.co"
+"app.factorydemo.Serviceable" = "src/app/factorydemo/Serviceable.co"
+"app.factorydemo.Log" = "src/app/factorydemo/Log.co"
+"app.factorydemo.Machine" = "src/app/factorydemo/Machine.co"
+"app.factorydemo.Assembler" = "src/app/factorydemo/Assembler.co"
+"app.factorydemo.Welder" = "src/app/factorydemo/Welder.co"
+"app.factorydemo.MachineFactory" = "src/app/factorydemo/MachineFactory.co"
+"app.factorydemo.Workshop" = "src/app/factorydemo/Workshop.co"
+"app.factorydemo.UnknownMachineError" = "src/app/factorydemo/UnknownMachineError.co"
+"app.factorydemo.WorkshopFullError" = "src/app/factorydemo/WorkshopFullError.co"
+
+allow-implicit-modules = false
+
+[dependencies]
+std = "system"
+
+[[units]]
+name = "app.factorydemo"
+modules = [
+  "app.factorydemo.Main",
+  "app.factorydemo.Named",
+  "app.factorydemo.Serviceable",
+  "app.factorydemo.Log",
+  "app.factorydemo.Machine",
+  "app.factorydemo.Assembler",
+  "app.factorydemo.Welder",
+  "app.factorydemo.MachineFactory",
+  "app.factorydemo.Workshop",
+  "app.factorydemo.UnknownMachineError",
+  "app.factorydemo.WorkshopFullError"
+]

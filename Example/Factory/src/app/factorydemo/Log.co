@@ -1,4 +1,4 @@
-module app.demo;
+module app.factorydemo;
 
 import std.io::{println};
 
@@ -9,5 +9,9 @@ public class Log() {
 
     public static func warn(string message) :> void {
         println("[warn] " + message);
+    }
+
+    public static func line() :> void {
+        println("----------------------------------------");
     }
 }

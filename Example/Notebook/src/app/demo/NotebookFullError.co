@@ -1,7 +1,7 @@
 module app.demo;
 
-public class NotebookFullError(String message) {
-    private const String value { public get; };
+public class NotebookFullError(string message) {
+    private const string value { public get; };
 
     public NotebookFullError {
         this.value = message;

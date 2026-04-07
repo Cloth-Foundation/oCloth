@@ -1,0 +1,44 @@
+module app.factorydemo;
+
+import std.io::{println};
+
+public class Main(string[] args) maybe UnknownMachineError, WorkshopFullError {
+    private Workshop floor { public get; };
+
+    public Main {
+        Log.line();
+        Log.info("Starting factory demo");
+
+        this.floor = new Workshop("North Line");
+
+        Machine a1 = MachineFactory.createAssembler("A-01", "gearbox");
+        Machine w1 = MachineFactory.createWelder("W-09", 75);
+        Machine a2 = MachineFactory.create("assembler", "A-02");
+
+        getFloor().add(a1);
+        getFloor().add(w1);
+        getFloor().add(a2);
+
+        getFloor().printRoster();
+        Log.line();
+
+        getFloor().startupAll();
+        Log.line();
+
+        getFloor().serviceAll();
+        Log.line();
+
+        getFloor().demoSpecializedCalls();
+        Log.line();
+
+        println("Machine type check: " + getFloor()::TYPEOF);
+        println("Meta length sample: " + "factory"::LENGTH);
+
+        Log.info("Factory demo complete");
+        Log.line();
+    }
+
+    public ~Main {
+        Log.warn("Main shutting down");
+    }
+}

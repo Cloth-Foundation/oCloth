@@ -2,8 +2,8 @@ module app.demo;
 
 import std.io::{println};
 
-public class Note(String text) {
-    private const String value { public get; };
+public class Note(string text) {
+    private const string value { public get; };
 
     public Note {
         this.value = text;

@@ -1,0 +1,9 @@
+module app.factorydemo;
+
+public class UnknownMachineError(string message) {
+    private const string value { public get; };
+
+    public UnknownMachineError {
+        this.value = message;
+    }
+}
