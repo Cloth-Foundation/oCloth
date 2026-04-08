@@ -32,3 +32,19 @@
    6. Optimization Passes
 
 5. Runtime Requirements
+
+```text
+Lexer
+  ↓
+Parser
+  ↓
+AST
+  ↓
+Semantic Analysis (types, ownership, visibility, etc.)
+  ↓
+Cloth IR (very important for you)
+  ↓
+LLVM IR Emitter
+  ↓
+LLVM (opt + codegen)
+```

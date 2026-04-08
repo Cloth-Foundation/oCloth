@@ -8,128 +8,98 @@
 
 1. Introduction
    1. Goals and Non-Goals
-   2. Conformance Language (MUST/SHOULD/MAY)
+   2. Conformance, Normative Language, and Specification Mechanics
    3. Terminology
+   4. Notation, grammar conventions, and examples
+   5. Document organization and forward references
+   6. Editions, version selection, and stability
 2. Lexical Structure
-   1. Source Text and Encoding
-   2. Tokens
-   3. Meta Tokens
-   4. Comments and Whitespace
-   5. Identifiers
-   6. Keywords
-   7. Operators and Punctuation
-   8. Literals
-      1. Integer Literals
-      2. Floating-Point Literals
-      3. Byte Literals
-      4. Bit Literals
-      5. Character Literals
-      6. String Literals
-      7. Boolean, Null, and Special Literals
-      8. Future Literal Forms
+   1. Definitions and observable lexer outputs
+   2. Source Text and Normalization
+   3. Lexical Grammar and Tokenization
+   4. Meta Tokens
+   5. Whitespace and Comments
+   6. Identifiers
+   7. Keywords
+   8. Operators and Punctuation
+   9. Literals
 3. Program Structure
-   1. Parsing Model and Expectations
-   2. Compilation Model (Two-Pass Overview)
-   3. Modules
-      1. Module Declarations
-      2. Module Naming Rules
-      3. Reserved Namespaces
-   4. Imports
-      1. Import Resolution
-      2. Cyclic Dependencies
+   1. Definitions
+   2. Source Files and Compilation Units
+   3. Module Declarations and Namespaces
+   4. Import System
    5. Top-Level Declarations
-   6. File Structure and Organization
+   6. File Layout Requirements
+   7. Deterministic Compilation Workflow
+   8. Required structural diagnostics
 4. Type System
-   1. Overview of the Type System
-   2. Primitive Types
-      1. Integer Types
-      2. Floating-Point Types
-      3. Boolean Type
-      4. String Type
-   3. Composite Types
-      1. Arrays
-      2. Tuples
-   4. Nullable Types
-   5. Type Modifiers
-      1. atomic
-      2. Other Modifiers
-   6. Type Identity and Equality
-   7. Type Inference Rules
-   8. Casting and Conversion
-      1. Explicit Casting (as)
-      2. Safe Casting
-      3. Implicit Conversions
+   1. Type model and foundational requirements
+   2. Classification and Guarantees
+   3. Primitive Types
+   4. Composite Types
+   5. Nullable Types
+   6. Modifiers and Ownership Annotations
+   7. Type Identity and Equality
+   8. Type Inference Rules
+   9. Conversion and Casting Semantics
 5. Declarations
-   1. General Declaration Rules
-   2. Variable Declarations
-   3. Constant Declarations
-   4. Function Declarations
-   5. Type Declarations
-      1. Class Declarations
-      2. Struct Declarations
-      3. Enum Declarations
-      4. Interface Declarations
+   1. Declaration model and environments
+   2. General declaration grammar
+   3. Variable declarations
+   4. Constant declarations
+   5. Function and method declarations
+   6. Receivers and member functions
+   7. Type declarations (overview)
+   8. Required declaration diagnostics
+   9. Traits (attached declaration metadata)
 6. Scope and Accessibility
-   1. Scope Rules
-      1. Block Scope
-      2. Function Scope
-      3. Type Scope
-   2. Name Resolution
-   3. Shadowing Rules
-   4. Visibility Modifiers
-      1. public
-      2. private
-      3. internal
-   5. Accessibility Constraints
+   1. Scope objects, environments, and terminology
+   2. Scope Model
+   3. Name Resolution
+   4. Shadowing
+   5. Visibility and Accessibility
+   6. Required scope and accessibility diagnostics
 7. Expressions
-   1. Expression Categories
-   2. Operator Precedence and Associativity
-   3. Assignment Expressions
-   4. Comparison Expressions
-   5. Logical Expressions
-   6. Bitwise Expressions
-   7. Arithmetic Expressions
-   8. Null-Coalescing / Fallback Expressions
-   9. Ternary Expressions
-   10. Lambda Expressions
-   11. Cast Expressions
-   12. Call Expressions
-   13. Member Access Expressions
+   1. Expression model and evaluation obligations
+   2. Categories
+   3. Operator Precedence and Associativity
+   4. Assignment
+   5. Comparison
+   6. Logical Expressions
+   7. Bitwise Expressions
+   8. Arithmetic Expressions
+   9. Null-Coalescing
+   10. Ternary Operator
+   11. Lambda Expressions
+   12. Cast Expressions
+   13. Call Expressions
+   14. Member Access
+   15. Evaluation Order and Side Effects
 8. Statements
-   1. Statement Categories
-   2. Declaration Statements
-   3. Assignment Statements
-   4. Expression Statements
-   5. Control Flow Statements
-      1. Conditional Statements
-      2. Iteration Statements
-      3. Jump Statements
-   6. Block Statements
-   7. Exception Handling
-      1. Throwing
-      2. Handling
-   8. Function and Method Calls as Statements
+   1. Statement execution model
+   2. Categories
+   3. Declaration Statements
+   4. Assignment Statements
+   5. Expression Statements
+   6. Control Flow
+   7. Block Statements
+   8. Exception Handling
+   9. Call Statements
+   10. Required statement diagnostics
 9. Type Definitions and Behavior
-   1. Classes
-      1. Class Structure
-      2. Inheritance Model
-      3. Final, Prototype, Implementation, and Override Rules
-   2. Structs
-   3. Enums
-   4. Interfaces
-   5. Members
-      1. Fields
-      2. Methods
-      3. Properties / Accessors
-   6. Member Lookup and Resolution
-   7. Shadowing and Overriding
-   8. Initialization Order
-   9. Construction Model
-      1. Primary Parameters
-      2. Default Values
-      3. Factory Patterns
-   10. Meta Accessors (Objects and Primitives)
-   11. Examples
+   1. Common requirements for nominal types
+   2. Classes
+   3. Structs
+   4. Enums
+   5. Interfaces
+   6. Members
+   7. Member Lookup and Resolution
+   8. Shadowing and Overriding
+   9. Initialization Order
+   10. Construction Model
+   11. Meta Accessors (Objects and Primitives)
+   12. Examples
+   13. Required type-system diagnostics (Section 9)
 10. Functions and Methods
     1. Declaration Grammar
     2. Signatures and Identity
@@ -163,6 +133,7 @@
     8. Error Propagation and Process Exit
     9. Shutdown Semantics
     10. Re-entrancy and Embedding
+    11. Required execution-model diagnostics
 13. Build System
     1. Manifest Placement and Encoding
     2. Required Sections
@@ -3762,7 +3733,14 @@ For the following type-definition errors, a conforming implementation MUST emit 
 
 ## 10. Functions and Methods
 
-Functions and methods define reusable behavior. They bind parameter lists to executable bodies, participate in overload resolution, and transfer ownership according to the rules established in Sections 4, 5, and 11. Unless stated otherwise, every rule in this section applies equally to free functions declared at module scope and to methods declared inside type bodies.
+Functions and methods define reusable behavior. They bind parameter lists to executable bodies, participate in overload resolution, and transfer ownership according to the rules established in Sections 4, 5, and 11.
+
+Unless stated otherwise, every rule in this section applies equally to:
+
+1. Free functions declared at module scope.
+2. Methods declared inside type bodies.
+
+All function typing, overload resolution, and call binding MUST be deterministic.
 
 ### 10.1 Declaration Grammar
 
@@ -3779,9 +3757,24 @@ function-body ::= block | ';' // semicolon indicates an external or abstract dec
 - Dispatch behavior and other semantic metadata are specified via traits (Section 5.8).
 - A declaration that ends with `;` and omits a body is abstract and must be satisfied by a concrete implementation elsewhere when permitted by the surrounding declaration context and by any attached traits (Sections 5.4 and 5.8).
 
+#### 10.1.1 Declarations vs definitions
+
+1. A function that has a block body is a **definition**.
+2. A function that ends with `;` is a **declaration without a definition**.
+3. A declaration without a definition is permitted only where the surrounding declaration context and attached traits permit an abstract signature (Sections 5.4.1.2 and 5.8.9.1).
+
 ### 10.2 Signatures and Identity
 
 A function's signature consists of its fully qualified name, ordered parameter types (including ownership markers), and its `maybe` clause. Return types do not participate in signature identity. Overloads **MUST** differ in at least one of these elements, otherwise the compiler rejects the redeclaration as ambiguous.
+
+#### 10.2.1 Function identity and overload sets
+
+1. Every name resolves to either:
+   1. A single function, or
+   2. An overload set.
+2. An overload set is a set of functions with the same fully qualified name.
+3. A function declaration adds an element to an overload set if and only if its signature is distinct under the signature definition above.
+4. If two declarations would introduce the same signature, the program is ill-formed.
 
 ### 10.3 Parameters and Ownership
 
@@ -3791,7 +3784,14 @@ A function's signature consists of its fully qualified name, ordered parameter t
 - Shared parameters (`$Type`) follow the shared-domain semantics. The callee increments the shared handle count upon entry and decrements it when the handle leaves scope.
 - Default arguments are permitted. Each default expression is evaluated in the caller's context immediately before the function body executes, observing the same left-to-right order as explicit arguments.
 - Cloth does not provide pass-by-reference (`var`/`inout`) parameters in this revision. Declaring such parameters is a compile-time error.
-- Parameters are immutable bindings unless explicitly marked `mutating` inside struct methods (Section 9.2). Reassigning a parameter name is forbidden; introduce a local variable instead.
+
+Parameters are immutable bindings. Reassigning a parameter name is forbidden; introduce a local variable instead.
+
+#### 10.3.1 Default argument binding
+
+1. Default arguments are bound by parameter position and name.
+2. Default argument expressions are resolved and evaluated at the call site.
+3. A default argument expression MUST NOT refer to locals of the callee.
 
 ### 10.4 Evaluation Order and Bodies
 
@@ -3800,6 +3800,14 @@ A function's signature consists of its fully qualified name, ordered parameter t
 - Function bodies are blocks enclosed in `{}`. A body may contain local variable declarations, nested type definitions, and nested function declarations. Nested functions obey the same rules as top-level functions but are scoped to the enclosing function.
 - Execution reaches the end of the body only if every code path returns, throws via a declared `maybe` error, or diverges (e.g., loops forever). The compiler **MUST** enforce definite return: if a function declares a non-`void` return type, every control path must return a value of that type.
 
+#### 10.4.1 Control-flow obligations
+
+1. If a function declares a non-`void` return type, every control-flow path through the body MUST:
+   1. Execute a `return` statement that returns a value convertible to the declared return type, or
+   2. Exit by throwing an error permitted by the function’s `maybe` clause, or
+   3. Diverge.
+2. If a function declares `:> void`, reaching the end of the body is permitted.
+
 ### 10.5 Return Semantics
 
 - Every function declares exactly one return type or `void`.
@@ -3807,6 +3815,11 @@ A function's signature consists of its fully qualified name, ordered parameter t
 - Returning `&Type` requires proving that the referent outlives the call. For instance methods, returning `&Type` tied to `this` is permitted only when the returned reference points to a field whose lifetime is guaranteed beyond the call.
 - Returning `$Type` hands the caller a shared handle whose reference count has already been adjusted.
 - Cloth does not support implicit multiple return values. Use tuple return types when multiple values must be produced.
+
+#### 10.5.1 Return conversions
+
+1. The returned expression MUST be convertible to the declared return type under Section 4.8.
+2. If the conversion requires an explicit cast and no explicit cast is present, the program is ill-formed.
 
 ### 10.6 Maybe Clauses and Error Flow
 
@@ -3821,12 +3834,24 @@ A function's signature consists of its fully qualified name, ordered parameter t
   - Convert to a value using expression-level constructs such as `??`, `as?`, or an explicit match.
 - When a `maybe` function throws, deterministic destruction still applies: all owned locals initialized before the throw are destroyed in reverse order before the error propagates.
 
+#### 10.6.1 `maybe any`
+
+1. `maybe any` indicates that the function may throw any error value.
+2. A caller that does not handle the call site MUST itself declare `maybe any`.
+3. `maybe any` MUST NOT weaken other typing rules; it only changes the permitted error set.
+
 ### 10.7 Overloading and Resolution
 
 - Overload resolution considers the function name, arity, parameter ownership markers, generic arguments (when defined), and the `maybe` clause.
 - Ambiguity is resolved via the usual precedence: exact type match > implicit widening > user-defined conversions (where permitted). If two overloads remain viable after ranking, the compiler emits an error and requires explicit qualification.
 - Overloads cannot be distinguished solely by visibility or by default parameter presence.
 - When selective imports bring multiple overload sets into scope, the programmer **MUST** use fully qualified names to disambiguate.
+
+#### 10.7.1 Deterministic overload selection
+
+1. Overload resolution MUST be deterministic.
+2. If multiple candidates remain applicable after ranking, the call is ill-formed.
+3. If no candidate is applicable, the call is ill-formed.
 
 ### 10.8 Invocation Semantics
 
@@ -3836,15 +3861,27 @@ A function's signature consists of its fully qualified name, ordered parameter t
 - Shared arguments increment the handle count before invocation and decrement when the call returns, even if the call throws.
 - Tail-call optimization is permitted but not required. When performed, it **MUST** preserve observable ownership semantics (no double destruction, etc.).
 
+#### 10.8.1 Argument-to-parameter binding
+
+1. Arguments bind to parameters by name when named arguments are used; otherwise by position.
+2. An argument value is converted as required by parameter type conversion rules.
+3. Ownership transfer for owned parameters is performed at the call boundary.
+
 ### 10.9 Methods and Receivers
 
 Methods are functions declared inside types. They obey all the rules above plus the following:
 
-- Instance methods receive an implicit `this` parameter. By default `this` is owned for classes and borrowed for structs to prevent accidental moves. Struct methods that mutate fields **MUST** declare themselves `mutating`, which upgrades `this` to an owned parameter for the duration of the call.
+- Instance methods receive an implicit receiver as defined by Section 5.5.
 - Static methods lack `this` and behave like free functions namespaced inside the type.
-- `override` methods participate in dynamic dispatch. Calls select the most-derived override whose static signature matches the invocation.
+- Methods that override inherited members MUST be annotated with `#Trait Override` (Section 5.8.9.4).
 - Interface methods are dispatched through interface tables. Implementations bind each interface member explicitly; ambiguous implementations are rejected.
 - Method references take two forms: `Type::method` (unbound) produces a callable that expects an explicit receiver as its first argument, while `instance::method` captures `this` and yields a zero-argument callable.
+
+#### 10.9.1 Method reference typing
+
+1. `Type::method` produces a callable whose first parameter is the receiver type.
+2. `instance::method` captures the receiver value and produces a callable that does not require an explicit receiver argument.
+3. Capturing a receiver obeys the ownership and borrowing rules; capturing an owned receiver moves it.
 
 ### 10.10 Recursion, Generics, and Async Execution
 
@@ -3857,7 +3894,18 @@ These rules ensure that functions and methods integrate cleanly with Cloth's own
 
 ## 11. Ownership & Lifetime Reference
 
-Ownership determines when objects are created, transferred, and destroyed. Although the **Cloth Ownership & Lifetime Model** document remains the canonical source for low-level proofs and algorithms, this section restates the essential contract that every compiler, runtime, and program author **MUST** honor when writing or executing Cloth code. The clauses below bind together the syntax from Sections 5 through 10 so that object lifetimes remain deterministic and analyzable.
+Ownership determines when objects are created, transferred, and destroyed.
+
+Although the **Cloth Ownership & Lifetime Model** document remains the canonical source for low-level proofs and algorithms, this section restates the essential contract that every compiler, runtime, and program author **MUST** honor when writing or executing Cloth code.
+
+This section defines:
+
+1. The observable meaning of ownership transfer (moves), duplication (copies), and destruction (drops).
+2. The lifetime domains and their invariants.
+3. The borrowing model and its exclusivity rules.
+4. Required diagnostics and undefined behavior conditions.
+
+Unless stated otherwise, violations of the rules in this section make the program ill-formed and MUST be diagnosed.
 
 ### 11.1 Scope and Authority
 
@@ -3865,11 +3913,26 @@ Ownership determines when objects are created, transferred, and destroyed. Altho
 2. When a contradiction arises between this specification and the lifetime model, the stricter interpretation prevails. Toolchains **MUST** emit diagnostics explaining which clause wins and why.
 3. Implementations that introduce extensions (e.g., new relationship markers) **MUST** document how those extensions map back to the same principles of exclusive ownership, explicit borrowing, and deterministic destruction.
 
+#### 11.1.1 Core terms
+
+1. A **move** transfers ownership of an owned value from one binding/location to another.
+2. A **copy** duplicates a value such that both the source and result remain usable.
+3. A **drop** destroys a value and releases any resources owned by it.
+4. A value is **live** at a program point if it may be used without triggering undefined behavior.
+5. A value is **moved-from** after a move; any use of a moved-from value is undefined behavior.
+
 ### 11.2 Lifetime Domains
 
 - **Owned domain** - Every heap-allocated instance (class object, array, etc.) belongs to exactly one owner. The domain forms a rooted tree whose root is the entrypoint instance described in Section 12. Destroying an owner recursively destroys all children.
 - **Shared domain** - Shared handles (`$Type`) reference objects outside the ownership tree. The runtime maintains reference counts or equivalent mechanisms so shared objects persist as long as at least one handle remains. Shared objects **MUST NOT** own non-shared children unless those children also live in the shared domain.
 - **Static domain** - Static data (fields, constants, manifest-level singletons) exists for the lifetime of the process. Static data never changes owners and is initialized exactly once following the ordering guarantees in Section 9.8.
+
+#### 11.2.1 Domain invariants
+
+1. Every owned object MUST have exactly one owner at every time it exists.
+2. A program MUST NOT create an ownership cycle in the owned domain.
+3. Shared handles MAY participate in cycles.
+4. Values in the static domain MUST be initialized exactly once and MUST remain live until process shutdown.
 
 ### 11.3 Relationship Markers
 
@@ -3879,12 +3942,25 @@ Ownership determines when objects are created, transferred, and destroyed. Altho
 - `static` members exist in the static domain and never participate in ownership moves.
 - Conversions between markers are explicit: `Type -> &Type` via borrowing, `Type -> $Type` via promotion into the shared domain, etc. Implicit conversions are prohibited unless defined elsewhere (e.g., Section 4.8).
 
+#### 11.3.1 Marker-preserving operations
+
+1. Reading from an owned location produces an owned value only when the read is defined to move; otherwise it produces a borrow.
+2. Passing an owned argument to an owned parameter moves ownership at the call boundary.
+3. Passing a borrowed argument to a borrowed parameter does not change ownership.
+4. Copying a shared handle copies the handle value and updates the shared-domain accounting.
+
 ### 11.4 Ownership Tree
 
 1. Each owned instance records its owner as metadata created at allocation time.
 2. Ownership relationships form a tree without cycles. Attempting to introduce a cycle (e.g., object `A` owning `B` while `B` owns `A`) is a compile-time error unless both edges are promoted into the shared domain.
 3. The destruction algorithm walks the tree depth-first, releasing children before their parent. Destructors (Section 9.1.4) execute after all children have been destroyed, ensuring user code observes a consistent teardown order.
 4. Moving an object from one owner to another updates the tree atomically: the old parent releases the child before the new parent adopts it.
+
+#### 11.4.1 Ownership transfer obligations
+
+1. The compiler MUST enforce that ownership transfers are explicit and analyzable.
+2. After a move, the source location becomes moved-from and MUST NOT be used.
+3. A moved-from location may be reinitialized by assignment, after which it becomes live again.
 
 ### 11.5 Transfers and Moves
 
@@ -3894,12 +3970,37 @@ Ownership determines when objects are created, transferred, and destroyed. Altho
 - **Collections** - Containers such as arrays own their elements unless the element type itself is a reference or shared handle. Copying a container performs element-wise moves.
 - **Temporaries** - Temporaries created during expression evaluation live until the end of the full expression unless moved earlier. The compiler inserts implicit drops at the end of the expression to enforce deterministic cleanup.
 
+#### 11.5.1 Copyability
+
+1. A type is **copyable** only if this specification or the standard library defines a copy operation that preserves ownership invariants.
+2. If an operation requires copying a non-copyable owned value, the program is ill-formed.
+3. Implementations MUST NOT silently substitute moves for copies or vice versa.
+
 ### 11.6 Borrowing Rules
 
 1. A borrow may not outlive its referent. The compiler tracks scopes so that any attempt to store `&Type` beyond the lifetime of the referenced value triggers a diagnostic.
-2. Multiple immutable borrows may coexist. Only one mutable borrow (a borrow that permits mutation) may exist at a time for a given object. Struct methods marked `mutating` obtain such a mutable borrow of `this`.
+2. Multiple immutable borrows may coexist.
+3. At most one **mutable borrow** (a borrow that permits mutation) may exist at a time for a given object, and it MUST be exclusive with any other borrow of that object.
 3. Borrows obtained from shared handles act like immutable borrows unless the shared type provides synchronized mutation primitives.
 4. Reborrowing (borrowing from an existing borrow) shortens the lifetime to the shorter of the two scopes.
+
+#### 11.6.1 Borrow creation sites
+
+Borrows may be created only by:
+
+1. Explicit borrow expressions.
+2. Receiver binding for methods whose receiver kind is borrowed, as defined by Section 5.5.
+3. Parameter passing into a borrowed parameter.
+
+#### 11.6.2 Escape and capture restrictions
+
+1. A borrow MUST NOT escape the lifetime of its referent.
+2. Storing a borrow into:
+   1. A heap-allocated object,
+   2. A static location, or
+   3. A closure capture
+
+is ill-formed unless the compiler can prove the referent outlives the storage duration of that location.
 
 ### 11.7 Shared Handles
 
@@ -3908,11 +4009,21 @@ Ownership determines when objects are created, transferred, and destroyed. Altho
 - Shared handles may reference other shared handles, enabling cyclic graphs that would be illegal in the owned domain. Programs **MUST** rely on shared handles whenever cycles are required.
 - Converting from shared to owned (`$Type -> Type`) is only legal when the caller proves it holds the sole handle (e.g., by invoking `try_unwrap`-style APIs defined in the standard library). The language itself does not provide an implicit conversion.
 
+#### 11.7.1 Shared handle safety
+
+1. Copying and dropping shared handles MUST update shared-domain accounting deterministically.
+2. Implementations MUST guarantee that dropping the last handle triggers destruction exactly once.
+
 ### 11.8 Static Domain
 
 - Static fields initialize exactly once before any instance of their declaring type is constructed.
 - Static data cannot reference owned instances directly. To reference runtime data, a static field must store either a shared handle or a factory capable of creating fresh owned objects on demand.
 - Shutting down the process triggers static destruction in reverse initialization order. Implementations **MUST** ensure no static destruction runs while user threads are still accessing the data.
+
+#### 11.8.1 Static references
+
+1. A borrow that refers to a static location may be treated as having static extent.
+2. A borrow that refers to a non-static location MUST NOT be stored into a static binding.
 
 ### 11.9 Scope Integration
 
@@ -3920,12 +4031,38 @@ Ownership determines when objects are created, transferred, and destroyed. Altho
 - Captured variables in lambdas obey the same lifetime rules. Capturing an owned variable transfers ownership into the lambda's closure object, which in turn becomes part of the ownership tree rooted at the capturing scope.
 - Exception handling (`try/catch/finally`) does not change destruction order. When control transfers out of a block prematurely, all owned values are still destroyed before the transfer completes.
 
+#### 11.9.1 Drop order
+
+1. Within a single lexical scope, owned locals are dropped in reverse declaration order.
+2. On any control transfer that exits a scope (normal or exceptional), drops occur before the transfer completes.
+
 ### 11.10 Diagnostics and Undefined Behavior
 
-- Using an object after it has been moved, dropped, or shared without proper synchronization is undefined behavior.
-- Attempting to borrow a value while a mutable borrow exists triggers a compile-time error. Implementations **SHOULD** provide precise spans to help developers reorganize their code.
-- Shared handles that form reference cycles without an explicit breaking strategy may leak memory. While not undefined behavior, implementations **MAY** emit warnings when they can statically detect such patterns.
-- Tooling (linters, compilers, formatters) **SHOULD** surface ownership-related diagnostics using clause references (e.g., "violates Section 11.6.2") to keep reports actionable.
+#### 11.10.1 Required diagnostics
+
+For the following ownership and lifetime errors, a conforming implementation MUST emit a diagnostic and MUST reject the program:
+
+1. Use of a moved-from value.
+2. Use of a value after it has been dropped.
+3. Attempting to copy a non-copyable owned value.
+4. Attempting to create an ownership cycle in the owned domain.
+5. Creating overlapping borrows that violate the exclusivity rules.
+6. A borrow that escapes its permitted lifetime.
+
+#### 11.10.2 Undefined behavior
+
+The following behaviors are undefined behavior:
+
+1. Using an object after it has been moved.
+2. Using an object after it has been dropped.
+3. Data races or unsynchronized mutation through aliases, where the program violates the borrow exclusivity or synchronization requirements.
+
+#### 11.10.3 Advisory warnings
+
+1. Shared handles that form reference cycles without an explicit breaking strategy may leak memory.
+2. Implementations MAY emit warnings when they can statically detect such patterns.
+
+Tooling (linters, compilers, formatters) SHOULD surface ownership-related diagnostics using clause references (e.g., "violates Section 11.6.2") to keep reports actionable.
 
 Collectively, these rules ensure that every Cloth program presents a predictable lifetime graph: ownership trees remain acyclic, shared graphs manage their own lifetimes, and static data stays isolated. By following this contract, implementations can provide deterministic destruction without garbage collection while still enabling expressive patterns such as borrowing, sharing, and factory-driven construction.
 
@@ -3934,11 +4071,25 @@ Collectively, these rules ensure that every Cloth program presents a predictable
 
 The execution model defines how compiled Cloth artifacts start, run, and terminate. It ties together module organization (Section 3), ownership semantics (Section 11), and manifest configuration (Section 13) so that every conforming runtime produces identical observable behavior in equivalent circumstances.
 
+This section is normative for:
+
+1. Entrypoint selection and validation.
+2. Initialization sequencing, including static initialization.
+3. The boundary between runtime-provided behavior and user code.
+4. Shutdown ordering and error exit behavior.
+
+Unless explicitly stated as implementation-defined, the orderings and obligations in this section MUST be preserved.
+
 ### 12.1 Objectives and Responsibilities
 
 1. Initialization, steady-state execution, and shutdown MUST occur in a well-defined order, regardless of host platform.
 2. Implementations MUST provide deterministic destruction by respecting the ownership tree rooted at the entrypoint instance.
 3. Toolchains MUST surface diagnostics whenever the manifest, module graph, or code violates these rules before emitting a runnable artifact.
+
+#### 12.1.1 Determinism requirements
+
+1. The runtime MUST NOT depend on file system enumeration order, hash iteration order, or host thread scheduling for any semantic decision.
+2. When this section allows implementation-defined behavior (for example exit codes), the implementation MUST document the choice.
 
 ### 12.2 Entrypoint Discovery
 
@@ -3946,6 +4097,15 @@ The execution model defines how compiled Cloth artifacts start, run, and termina
 2. If neither the project nor the target specifies an entry, the compiler searches the root module for a public class named `Main`.
 3. Exactly one candidate MUST remain after applying these rules. Multiple candidates or no candidates are compile-time errors.
 4. Entrypoint discovery occurs after module resolution so that fully qualified names are available and unambiguous.
+
+#### 12.2.1 Entrypoint resolution algorithm
+
+Given an entry specifier string `S`:
+
+1. `S` MUST parse as a qualified type name.
+2. The module path portion of `S` MUST resolve to an existing module under the import and module rules (Section 3).
+3. The terminal identifier of `S` MUST resolve to a type symbol exported by that module.
+4. The resolved type symbol MUST then be validated by Section 12.3.
 
 ### 12.3 Main Class Requirements
 
@@ -3955,7 +4115,12 @@ The resolved entry type, referred to as `Main`, MUST satisfy all of the followin
 - Visible to the build target under the usual visibility rules (Section 6.4).
 - Non-abstract unless every abstract member is satisfied by prototypes/traits whose implementations are provided directly on `Main`.
 - Contains at least one constructor accessible to the runtime (Section 12.4).
-- May implement interfaces or inherit from another class, provided the inheritance hierarchy is acyclic and every base class is loadable from the selected target.
+
+Additional constraints:
+
+1. If `Main` declares a base class, that base class MUST be a class and MUST NOT be `const` (Section 9.1.2.1).
+2. The inheritance hierarchy reachable from `Main` MUST be acyclic.
+3. `Main` MUST NOT be a `const` class.
 
 ### 12.4 Entry Constructors
 
@@ -3963,6 +4128,22 @@ The resolved entry type, referred to as `Main`, MUST satisfy all of the followin
 - The runtime guarantees only one standardized argument: `string[] args`, populated from the process command line. Constructors that require additional parameters must obtain them indirectly (e.g., via dependency injection or static factories) after instantiation.
 - Entry constructors MAY declare a `maybe` clause. If the constructor throws an error listed in that clause, the runtime treats initialization as failed, destroys any partially initialized state, and exits with a non-zero status.
 - Constructors MUST call exactly one base constructor before executing their own field initializers (Section 9.8). Failure to do so is ill-formed.
+
+#### 12.4.1 Constructor selection
+
+Given the set of constructors declared by `Main`:
+
+1. The runtime-visible constructor set is the subset of constructors that are accessible under Section 6.4.
+2. If the manifest specifies an explicit entry constructor selection, the selection mechanism is implementation-defined but MUST be deterministic and MUST uniquely identify a constructor.
+3. Otherwise, if there exists exactly one parameterless runtime-visible constructor, that constructor is selected.
+4. Otherwise, the program is ill-formed.
+
+#### 12.4.2 `args` parameter binding
+
+1. The runtime supplies the command line as a value of type `string[]`.
+2. If the selected entry constructor has a single parameter of type `string[]`, that parameter is bound to the supplied `args` value.
+3. If the selected entry constructor has zero parameters, `args` is not passed.
+4. Any other entry constructor parameter list is ill-formed in edition 1.0.
 
 ### 12.5 Initialization Sequence
 
@@ -3975,11 +4156,21 @@ Implementations MUST execute the following phases in order. Each phase completes
 5. **Instance construction** - Allocate the `Main` instance, supply standardized parameters, run base constructors, execute field initializers, then run the entry constructor body.
 6. **Post-construction verification** - After the constructor returns successfully, the runtime treats the resulting instance as the root of the ownership tree and begins steady-state execution.
 
+#### 12.5.1 Static initialization cycle rejection
+
+1. If static initialization forms a dependency cycle, the program is ill-formed.
+2. Implementations MUST diagnose the cycle and MUST NOT attempt to break it by choosing an arbitrary order.
+
 ### 12.6 Runtime Environment
 
 - `string[] args` contains the exact command-line arguments passed by the hosting process. Arguments are UTF-8 encoded and immutable.
 - Environment data (working directory, environment variables, clocks) is host-specific but MUST be observable through the standard library; the execution model itself does not prescribe APIs.
 - Implementations MAY spawn additional threads or event loops on behalf of the program only after the entry constructor completes. Doing so earlier risks accessing partially initialized state.
+
+#### 12.6.1 Host interaction boundary
+
+1. The only required runtime-provided input to the program is `args`.
+2. All other host interaction is mediated through the standard library or implementation-defined libraries.
 
 ### 12.7 Steady-State Execution
 
@@ -3987,11 +4178,21 @@ Implementations MUST execute the following phases in order. Each phase completes
 - Owned objects created during this phase join the ownership tree beneath `Main` or whichever owner allocates them. Shared objects behave according to Section 11.7.
 - Asynchronous operations, futures, and background tasks are all part of steady state. Hosts MUST ensure that any runtime services (e.g., thread pools) remain alive until shutdown begins.
 
+#### 12.7.1 Ownership root
+
+1. The successfully constructed `Main` instance is the root owner for the owned domain (Section 11.2).
+2. All subsequently allocated owned instances MUST be reachable from this root by following ownership edges, unless explicitly promoted into the shared domain.
+
 ### 12.8 Error Propagation and Process Exit
 
 - When an uncaught error escapes from user code, the runtime searches outward for the nearest handler. If the error propagates all the way to `Main` and is not handled, shutdown begins immediately using the failure path described below.
 - Successful completion occurs when the entry constructor returns and all foreground work finishes (typically when `Main` returns or explicitly calls a termination API). The process exits with status `0`.
 - Failure completion occurs when an uncaught error escapes or the host requests termination. The runtime records the error (if available), begins deterministic destruction, and exits with a non-zero status chosen by the implementation (commonly `1`).
+
+#### 12.8.1 Uncaught errors
+
+1. If an error escapes the entry constructor and is not handled within it, the program terminates with failure completion.
+2. If an error escapes steady-state user code and is uncaught, the runtime initiates shutdown.
 
 ### 12.9 Shutdown Semantics
 
@@ -4003,11 +4204,30 @@ Shutting down a Cloth program, whether due to success or failure, adheres to the
 4. Runtimes MUST flush buffered I/O, logs, and profiling streams before returning control to the host OS.
 5. Shutdown callbacks registered via standardized APIs (e.g., `defer app::shutdown { ... }` if introduced in future revisions) execute after owned objects are destroyed but before static teardown.
 
+#### 12.9.1 Shutdown determinism
+
+1. Shutdown MUST be idempotent: initiating shutdown multiple times MUST NOT cause double-destruction.
+2. The runtime MUST complete all mandatory drops for owned and shared handles before returning control to the host.
+
 ### 12.10 Re-entrancy and Embedding
 
 - A single process MAY instantiate multiple Cloth runtimes, but each runtime instance MUST maintain its own ownership root and manifest context. No two runtimes may share owned objects or static state without using shared handles or explicit host mediation.
 - Re-entering the same runtime (e.g., by invoking generated functions from native code) is permitted as long as the re-entry obeys ownership rules. Hosts MUST ensure they do not call back into Cloth while the runtime is in the middle of deterministic destruction.
 - Embedders MUST honor the initialization and shutdown sequences described above even when the program is not launched as a standalone executable.
+
+### 12.11 Required execution-model diagnostics
+
+For the following execution-model errors, a conforming implementation MUST emit a diagnostic and MUST reject the program:
+
+1. `[project].entry` does not resolve to a type.
+2. The resolved entry type is not a top-level `public class`.
+3. The entry type is `const`.
+4. The entry type declares a base class that is not a class.
+5. The entry type declares a base class that is `const`.
+6. No runtime-visible entry constructor exists.
+7. Entry constructor selection is ambiguous.
+8. The selected entry constructor has an invalid parameter list under Section 12.4.2.
+9. Static initialization contains a dependency cycle.
 
 These guarantees ensure that every conforming Cloth program starts predictably, observes a single coherent ownership tree, and shuts down without resource leaks or order-dependent surprises. By coupling manifest-driven entrypoint resolution with deterministic destruction, the language preserves the transparency required for systems programming without imposing a garbage collector or hidden runtime services.
 
@@ -4022,6 +4242,21 @@ Conforming toolchains rely on a manifest named `build.toml` to describe every as
 2. The manifest MUST be valid TOML 1.0 encoded as UTF-8 without a byte-order mark. Parsers **MUST** reject malformed files before reading any source code.
 3. When multiple manifests exist (for example, a top-level workspace plus nested packages), the path supplied via CLI or tool configuration selects the active manifest. Implementations **MUST** fail when no manifest is found rather than guessing.
 4. Unknown tables or keys MAY be ignored, but tooling **MUST NOT** reinterpret standardized keys; doing so would break cross-tool reproducibility.
+
+#### 13.1.1 Key and value normalization
+
+1. Table names and keys are case-sensitive and MUST be interpreted exactly as written.
+2. Implementations MUST treat unknown keys inside standardized tables as errors when doing so is required by later clauses (for example Section 13.3.3 profile fields).
+3. All string values representing paths MUST be interpreted as UTF-8.
+
+#### 13.1.2 Path resolution and containment
+
+1. Any path `p` in the manifest is resolved as:
+   1. If `p` is absolute, use `p`.
+   2. Otherwise resolve `p` relative to the directory containing `build.toml`.
+2. Implementations MUST normalize paths by resolving `.` and `..` segments.
+3. Unless a clause explicitly permits it, normalized paths MUST remain within the workspace root.
+4. A manifest that refers to a path that does not exist is ill-formed.
 
 ### 13.2 Required Sections
 
@@ -4039,6 +4274,12 @@ The `[project]` table establishes package identity and the default entry target.
 
 Manifests MUST NOT attempt to describe the entrypoint through file-based settings (e.g., `main_file`). Any such field MUST produce a diagnostic referencing `[project].entry` as the sole source of truth.
 
+##### 13.2.1.1 Entrypoint specifier format
+
+1. `[project].entry` MUST be a non-empty string.
+2. It MUST parse as a qualified type name as required by Section 12.2.1.
+3. Toolchains MUST NOT accept file paths, relative file references, or unqualified identifiers as entrypoint specifiers.
+
 #### 13.2.2 `[build]`
 
 `[build]` tells the compiler where to find sources and where to place outputs.
@@ -4053,6 +4294,11 @@ Manifests MUST NOT attempt to describe the entrypoint through file-based setting
   - `main_file` (tooling hint only; MUST NOT participate in entrypoint selection).
 
 All paths are interpreted relative to the manifest unless marked absolute. Paths **MUST NOT** escape the workspace root unless the user opts in via a documented allowlist.
+
+#### 13.2.3 Build configuration determinism
+
+1. `source_dir` discovery and module mapping MUST be deterministic.
+2. Toolchains MUST NOT depend on directory enumeration order; when ordering is required, toolchains MUST sort by normalized path.
 
 ### 13.3 Optional Core Tables
 
@@ -4074,6 +4320,18 @@ Dependencies describe additional packages required to compile the project.
 - Version resolution MUST be deterministic. When multiple releases satisfy all ranges, the compiler selects the highest compatible version unless a lock file (Section 13.5) pins a specific revision.
 - Circular dependencies are prohibited unless every edge in the cycle is marked `side = "tool"`. The compiler **MUST** report other cycles before code generation.
 
+##### 13.3.1.1 Dependency identity
+
+1. A dependency is identified by its manifest `[project].name` and `[project].version`.
+2. A dependency key in `[dependencies]` MUST be a valid identifier (Section 2.5) and MUST be treated as the local package alias.
+3. Two dependencies with different identities MUST NOT resolve to the same local alias in a single build.
+
+##### 13.3.1.2 Deterministic version solving
+
+1. Version solving MUST be performed over the full transitive dependency graph.
+2. When multiple versions satisfy the constraints, the solver MUST select the maximal version under semantic version ordering.
+3. If constraints admit no solution, the program is ill-formed.
+
 #### 13.3.2 `[features]`
 
 The `[features]` table gates optional code paths.
@@ -4081,6 +4339,13 @@ The `[features]` table gates optional code paths.
 - Keys are feature names; values are arrays listing dependencies or other features to enable when the feature is active.
 - The reserved feature `default` defines the feature set applied when the user does not specify `--features` explicitly.
 - Activating a feature MAY pull in optional dependencies or toggle conditional compilation flags. Tooling MUST apply feature effects before dependency resolution completes so that manifests remain deterministic.
+
+##### 13.3.2.1 Feature activation semantics
+
+1. Feature sets are computed before version solving.
+2. A feature name MUST resolve to a key in `[features]` or be rejected.
+3. Activating a feature MUST activate every element listed in that feature’s array.
+4. The reserved feature `default` MUST be treated as active when no explicit feature list is provided.
 
 #### 13.3.3 `[profiles.<name>]`
 
@@ -4102,6 +4367,16 @@ Targets describe discrete build artifacts.
 - `dependencies` (inline table) declares target-specific dependencies merged into the root `[dependencies]` set before resolution.
 - When multiple targets exist, build tooling MUST require the caller to specify which target to build; otherwise the default executable target derived from `[project].entry` is used.
 
+##### 13.3.4.1 Target selection
+
+1. If a build command specifies a target name, exactly one `[targets.<name>]` table MUST exist.
+2. If no target is specified:
+   1. If exactly one executable target exists, it is selected.
+   2. Otherwise, the default target is an implementation-defined selection that MUST be deterministic and MUST be documented.
+3. A selected executable target’s effective entrypoint is:
+   1. `[targets.<name>].entry` if present, otherwise
+   2. `[project].entry`.
+
 Manifests MUST NOT define `[[units]]` or other non-standard partitioning tables. Until a future revision standardizes compilation units, toolchains rely solely on module auto-discovery guided by `[build]` and `[targets.*]`.
 
 ### 13.4 Dependency Resolution Flow
@@ -4114,11 +4389,21 @@ Implementations MUST follow this deterministic pipeline:
 4. Detect conflicts (duplicate modules, incompatible editions, etc.) and emit diagnostics before compiling any source.
 5. Record the resolved graph for tooling (e.g., in `build.lock`).
 
+#### 13.4.1 Graph canonicalization
+
+1. The resolved dependency graph MUST have a canonical serialization.
+2. Toolchains MUST order dependencies by `(package name, selected version, source kind)` when emitting lock files or build plans.
+
 ### 13.5 Reproducibility and Lock Files
 
 - Toolchains MAY create `build.lock` (or another implementation-defined lock file) to pin exact dependency versions, git revisions, and binary artifacts.
 - When a lock file is present, the compiler **MUST** honor it unless the user explicitly requests an update (e.g., `--update-lock`).
 - Lock files belong to the workspace root and MUST be encoded as UTF-8 TOML for easy auditing.
+
+#### 13.5.1 Lock file authority
+
+1. When a lock file is present, it is the authoritative record of resolved dependency identities.
+2. A toolchain MUST reject a lock file that contradicts the manifest’s dependency constraints.
 
 ### 13.6 Workspaces and Nested Packages
 
@@ -4136,6 +4421,20 @@ Implementations MUST follow this deterministic pipeline:
   - Optional dependencies are declared but never referenced by any feature.
   - Targets override `entry` with a type that does not exist.
 - Diagnostics MUST be deterministic: identical manifests yield identical error ordering.
+
+#### 13.7.1 Required diagnostics
+
+For the following manifest errors, a conforming implementation MUST emit a diagnostic and MUST reject the build:
+
+1. Missing `[project]` or `[build]`.
+2. Missing required keys in `[project]` or `[build]`.
+3. `[project].entry` that does not satisfy Section 13.2.1.1.
+4. Any referenced path that does not exist.
+5. A dependency entry with multiple source attributes.
+6. A dependency graph cycle not permitted by Section 13.3.1.
+7. A version solve failure.
+8. An unknown field inside a profile table.
+9. A target that specifies an unsupported `kind`.
 
 ### 13.8 Minimal Manifest Example
 
