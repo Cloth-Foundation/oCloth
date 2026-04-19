@@ -29,13 +29,13 @@ Cloth is a high-performance, object-oriented, low-level language designed for pr
 Download the latest compiler installer for your operating system and follow the on-screen instructions. You may need administrator permissions.
 
 ## Build From Source
-While not recommended, you can follow [the Installation Guide][INSTALL.md].
+While not recommended, you can follow [the Installation Guide](INSTALL.md).
 
 ## Help
 See the [Help Center](https://cloth.dev/resources) or the [Documentation](https://docs.cloth.dev/) for help resources.
 
 ## Contributing
-See [Contributing.md](Contributing.md).
+See [Contributing.md](CONTRIBUTING.md).
 
 ## License
 Cloth is distributed under the terms of the MIT license and Apache 2.0 license. 
