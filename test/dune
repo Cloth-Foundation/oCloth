@@ -1,0 +1,15 @@
+(test
+ (name test_token)
+ (libraries cloth_frontend alcotest))
+
+(test
+ (name test_source_file)
+ (libraries cloth_frontend alcotest))
+
+(test
+ (name test_source_span)
+ (libraries cloth_frontend alcotest))
+
+(test
+ (name test_lexer)
+ (libraries cloth_frontend alcotest))

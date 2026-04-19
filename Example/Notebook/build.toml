@@ -2,17 +2,11 @@
 name = "app.demo"
 version = "0.1.0"
 edition = "latest"
-module-root = "src"
-output-kind = "binary"
+entry = "app.demo.Main"
+module_root = "src"
+
+[build]
+source_dir = "src"
+output_dir = "build"
 profile = "debug"
-
-[target]
-main = "app.demo.Main"
-triple = "host"
-link = "system"
-
-[paths]
-source = ["src"]
-
-[dependencies]
-std = "system"
+emit = ["binary"]
