@@ -38,10 +38,10 @@ let run_lex path =
       1
   | Ok source ->
       let lexer = Frontend.Lexer.create source in
-      let tokens = Frontend.Lexer.lex_all lexer in
+      let _tokens = Frontend.Lexer.lex_all lexer in
       let diagnostics = Frontend.Lexer.diagnostics lexer in
       if diagnostics <> [] then print_diagnostics diagnostics;
-      List.iter print_token tokens;
+      if !(Frontend.Cmd_exec.dump_tokens) then List.iter print_token _tokens;
       0
 
 let command_of_string = function
@@ -50,8 +50,18 @@ let command_of_string = function
     | "--version" -> Some `Version
     | _ -> None
 
+let process_flags args =
+  List.filter
+    (fun arg ->
+      match arg with
+      | "-dump-tokens" ->
+          Frontend.Cmd_exec.dump_tokens := true;
+          false
+      | _ -> true)
+    args
+
 let () =
-  let args = Array.to_list Sys.argv |> List.tl in
+  let args = Array.to_list Sys.argv |> List.tl |> process_flags in
   let exit_code = 
     match args with
     | cmd :: file :: [] -> (

@@ -33,6 +33,7 @@ let help () =
   prerr_endline "";
 
   prerr_endline "Debug:";
+  prerr_endline "  -dump-tokens                Dump lexer tokens";
   prerr_endline "  -dump-ast <file>            Print parsed AST";
   prerr_endline "  -dump-ir <file>             Print lowered IR";
   prerr_endline "  -dump-symbols <file>        Print symbol table/resolution data";
