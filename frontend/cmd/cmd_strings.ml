@@ -14,12 +14,12 @@ let help () =
 
   prerr_endline "Commands:";
   prerr_endline "  help, ?                     Show this help message";
-  prerr_endline "  --version                   Show compiler version";
-  prerr_endline "  lexer <file>                Run lexer on a source file";
-  prerr_endline "  parse <file>                Parse source and report syntax errors";
-  prerr_endline "  check <file>                Run semantic/type checks";
-  prerr_endline "  run <file>                  Compile and execute";
-  prerr_endline "  build <file>                Compile to output artifact";
+  prerr_endline "  version                     Show compiler version";
+  prerr_endline "  lexer <-flags?><file>       Run lexer on a source file";
+  prerr_endline "  parse <-flags?><file>       Parse source and report syntax errors";
+  prerr_endline "  check <-flags?><file>       Run semantic/type checks";
+  prerr_endline "  run <-flags?><file>         Compile and execute";
+  prerr_endline "  build <-flags?><file>       Compile to output artifact";
   prerr_endline "";
 
   prerr_endline "Options:";

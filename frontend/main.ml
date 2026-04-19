@@ -47,7 +47,7 @@ let run_lex path =
 let command_of_string = function
     | "lexer" -> Some `Lexer
     | "-help" | "?" -> Some `Help
-    | "--version" -> Some `Version
+    | "version" -> Some `Version
     | _ -> None
 
 let process_flags args =
