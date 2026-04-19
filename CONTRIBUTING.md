@@ -1,7 +1,3 @@
-Here’s a **refactored version tailored to Cloth**, keeping your tone (professional, clean, no fluff) and aligning with your language design, compiler, and ecosystem:
-
----
-
 # Contributing to Cloth
 
 Thank you for your interest in contributing to **Cloth**. Contributions of all kinds are welcome, including language design, compiler development, tooling, documentation, and ecosystem improvements.
