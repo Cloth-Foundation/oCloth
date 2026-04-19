@@ -1,4 +1,18 @@
 (library
- (name cloth_frontend)
- (modules source_location source_span source_file token lexer)
+ (name cloth)
+ (modules
+  source_location
+  source_span
+  source_file
+  diagnostic
+  diagnostic_renderer
+  token
+  char_class
+  lexer)
  (libraries fmt))
+
+(executable
+ (name main)
+ (public_name cloth)
+ (modules main)
+ (libraries cloth))

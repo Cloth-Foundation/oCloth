@@ -1,15 +1,23 @@
 (test
  (name test_token)
- (libraries cloth_frontend alcotest))
+ (libraries cloth alcotest))
 
 (test
  (name test_source_file)
- (libraries cloth_frontend alcotest))
+ (libraries cloth alcotest))
 
 (test
  (name test_source_span)
- (libraries cloth_frontend alcotest))
+ (libraries cloth alcotest))
 
 (test
  (name test_lexer)
- (libraries cloth_frontend alcotest))
+ (libraries cloth alcotest))
+
+(test
+ (name test_char_class)
+ (libraries cloth alcotest))
+
+(test
+ (name test_diagnostic)
+ (libraries cloth alcotest))

@@ -1,4 +1,4 @@
-module Frontend = Cloth_frontend
+module Frontend = Cloth
 
 let sample_file () =
   match
