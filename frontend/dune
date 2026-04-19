@@ -3,6 +3,9 @@
 (library
  (name cloth)
  (modules
+  cmd_strings
+  cmd_exec
+  definitions
   source_location
   source_span
   source_file

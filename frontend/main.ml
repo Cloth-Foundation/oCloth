@@ -25,11 +25,6 @@ let print_diagnostics diagnostics =
       output_string stderr rendered)
     diagnostics
 
-let print_usage () =
-  prerr_endline "Usage:";
-  prerr_endline "  cloth <file>";
-  prerr_endline "  cloth lexer <file>"
-
 let run_lex path =
   match Frontend.Source_file.from_path path with
   | Error Frontend.Source_file.Invalid_extension ->
@@ -49,21 +44,50 @@ let run_lex path =
       List.iter print_token tokens;
       0
 
+let command_of_string = function
+    | "lexer" -> Some `Lexer
+    | "-help" | "?" -> Some `Help
+    | "--version" -> Some `Version
+    | _ -> None
+
 let () =
   let args = Array.to_list Sys.argv |> List.tl in
-  let exit_code =
+  let exit_code = 
     match args with
-    | [ "lexer"; file ] -> run_lex file
-    | [ "lexer" ] ->
-        prerr_endline "error: missing file for lexer command";
-        1
-    | [ file ] -> run_lex file
-    | cmd :: _ ->
-        prerr_endline ("error: unknown command '" ^ cmd ^ "'");
-        print_usage ();
-        1
-    | [] ->
-        print_usage ();
-        1
+    | cmd :: file :: [] -> (
+      match command_of_string cmd with 
+        | Some `Lexer -> run_lex file
+        | Some `Help -> 
+          Frontend.Cmd_strings.help ();
+          0
+        | Some `Version -> 
+          Frontend.Cmd_exec.print_version ();
+          0
+        | None -> 
+          prerr_endline ("error: unknown command '" ^ cmd ^ "'");
+          1
+    )
+    | [ cmd ] -> (
+      match command_of_string cmd with
+        | Some `Lexer -> 
+          prerr_endline "error: no file specified";
+          1
+        | Some `Help -> 
+          Frontend.Cmd_strings.help ();
+          0
+        | Some `Version -> 
+          Frontend.Cmd_exec.print_version ();
+          0
+        | None -> 
+          prerr_endline ("error: unknown command '" ^ cmd ^ "'");
+          1
+    )
+    | [] -> 
+      Frontend.Cmd_strings.help ();
+      1
+    | cmd :: _ -> 
+      prerr_endline ("error: invalid arguments for command '" ^ cmd ^ "'");
+      Frontend.Cmd_strings.help ();
+      1
   in
   exit exit_code

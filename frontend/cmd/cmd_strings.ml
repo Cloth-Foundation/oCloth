@@ -1,0 +1,49 @@
+let usage () =
+  prerr_endline "Usage:";
+  prerr_endline "  cloth <flags?> <command>";
+  prerr_endline "  USE: cloth -h for help"
+
+let help () =
+  prerr_endline ("Cloth Compiler " ^ Definitions.compiler_version);
+  prerr_endline "";
+
+  prerr_endline "Usage:";
+  prerr_endline "  cloth <command> [options] <file>";
+  prerr_endline "  cloth <file>                (defaults to run)";
+  prerr_endline "";
+
+  prerr_endline "Commands:";
+  prerr_endline "  help, ?                     Show this help message";
+  prerr_endline "  --version                   Show compiler version";
+  prerr_endline "  lexer <file>                Run lexer on a source file";
+  prerr_endline "  parse <file>                Parse source and report syntax errors";
+  prerr_endline "  check <file>                Run semantic/type checks";
+  prerr_endline "  run <file>                  Compile and execute";
+  prerr_endline "  build <file>                Compile to output artifact";
+  prerr_endline "";
+
+  prerr_endline "Options:";
+  prerr_endline "  -o <path>                   Set output path";
+  prerr_endline "  -target <triple>            Select target/backend";
+  prerr_endline "  -O0|-O1|-O2|-O3             Optimization level";
+  prerr_endline "  -g                          Emit debug information";
+  prerr_endline "  -Werror                     Treat warnings as errors";
+  prerr_endline "  -I <dir>                    Add import/include directory";
+  prerr_endline "  -color <mode>               Diagnostic color: always|auto|never";
+  prerr_endline "";
+
+  prerr_endline "Debug:";
+  prerr_endline "  -dump-ast <file>            Print parsed AST";
+  prerr_endline "  -dump-ir <file>             Print lowered IR";
+  prerr_endline "  -dump-symbols <file>        Print symbol table/resolution data";
+  prerr_endline "";
+
+  prerr_endline "Examples:";
+  prerr_endline "  cloth main.co";
+  prerr_endline "  cloth lexer main.co";
+  prerr_endline "  cloth parse src/main.co";
+  prerr_endline "  cloth build main.co -o out.exe";
+  prerr_endline "";
+
+  prerr_endline "For more help:";
+  prerr_endline "  cloth <command> -help";
