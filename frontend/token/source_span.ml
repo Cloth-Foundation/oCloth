@@ -67,3 +67,10 @@ let pp ppf span =
 
 let to_string span =
   Format.asprintf "%a" pp span
+
+let span_to_string span =
+  Format.asprintf "%d:%d-%d:%d"
+    (Source_location.line span.start)
+    (Source_location.column span.start)
+    (Source_location.line span.end_)
+    (Source_location.column span.end_)

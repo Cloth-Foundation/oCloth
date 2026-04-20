@@ -1,0 +1,35 @@
+module cloth;
+
+import std.io;
+import Number;
+
+public const class NumberFunctions(i32? number) :> Number(number) is Serializable {
+    private const i32? myInt { public get; };
+    private const u32? myUnsigned { public get; };
+    private float? myFloat { public get; private set; };
+    private bool myBool { public get as getMyBool; private set; };
+
+    #Prototype
+    #Trait Deprecated(since="1.0.0", remove="1.1.0", message="Use toUnsignedChecked() instead")
+    public func intToUnsigned() :> unsigned maybe NegativeNumberError, NullValueError;
+
+    public NumberFunctions maybe NegativeNumberError, NullValueError {
+        this.myInt = number;
+        this.myUnsigned = intToUnsigned();
+    }
+
+    public func convertIntToFloat() :> float {
+        const i32 value = getMyInt() ?? 0;
+        return value as? float;
+    }
+
+    public func intToUnsigned() :> u32 maybe NegativeNumberError, NullValueError {
+        const i32 value = getMyInt() ?? throw new NullValueError("myInt is null");
+        return (value as? u32) ?? throw new NegativeNumberError("Negative number");
+    }
+
+    #Override
+    public func Number::subtract(int x) :> int {
+        return this.number - x;
+    }
+}

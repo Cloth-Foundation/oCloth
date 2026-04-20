@@ -6,6 +6,7 @@
   cmd_strings
   cmd_exec
   definitions
+  print_lexer_stream
   source_location
   source_span
   source_file
@@ -14,7 +15,7 @@
   token
   char_class
   lexer)
- (libraries fmt))
+ (libraries fmt yojson))
 
 (executable
  (name main)

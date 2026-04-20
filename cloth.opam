@@ -20,5 +20,6 @@ depends: [
     "bisect_ppx" { = "2.8.3"}
     "menhir"{= "20260209"}
     "fmt" { ="0.11.0"}
+    "yojson"
     "ppx_deriving_protobuf" {= "3.0.0"}
 ]

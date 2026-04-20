@@ -11,3 +11,4 @@ val merge : t -> t -> t
 val compare : t -> t -> int
 val pp : Format.formatter -> t -> unit
 val to_string : t -> string
+val span_to_string : t -> string
