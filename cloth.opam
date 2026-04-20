@@ -21,5 +21,6 @@ depends: [
     "menhir"{= "20260209"}
     "fmt" { ="0.11.0"}
     "yojson"
+    "cmdliner"
     "ppx_deriving_protobuf" {= "3.0.0"}
 ]
